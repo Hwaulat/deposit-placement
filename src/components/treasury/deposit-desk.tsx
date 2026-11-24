@@ -1232,6 +1232,19 @@ function AllocationView({
   const limitUse = depositLimit ? (afterPlacement / depositLimit) * 100 : 0;
   const canCreateVoucher = proposal.status === "Ready" && workspace.allocationState !== "Voucher created" && proposal.lines.length > 0;
 
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+
+  const filteredLines = useMemo(() => {
+    return proposal.lines.filter((line) => {
+      const matchSearch =
+        line.bankName.toLowerCase().includes(search.toLowerCase()) ||
+        line.reason.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === "All" || line.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [proposal.lines, search, statusFilter]);
+
   return (
     <div className="space-y-5">
       <Panel className="allocation-summary">
@@ -1281,15 +1294,53 @@ function AllocationView({
           ) : null}
         </Panel>
       ) : (
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs xl:col-span-8">
-            <div className="flex items-center justify-between border-b border-border p-4">
-              <div>
-                <h3 className="text-sm font-semibold text-foreground">Suggested placements</h3>
-                <p className="text-xs text-muted-foreground">Rank, rate and allocation limits are shown for every bank.</p>
+        <div className="space-y-5">
+          {/* Table & Filter Container Card (Fill Container) */}
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs w-full">
+            <div className="filter-toolbar">
+              <div className="relative min-w-[240px] flex-1">
+                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                <input
+                  type="text"
+                  placeholder="Search suggested placement by bank, reason..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+                />
               </div>
-              <Button variant="outline" size="sm" onClick={() => exportCsv("deposit-proposal.csv", proposal.lines.map((line) => ({ Bank: line.bankName, Rank: line.rank, Amount: line.amount, Rate: `${line.annualRate}%`, Tenor: `${line.tenorDays} days`, Maturity: line.maturityDate, Reason: line.reason })))}><Download className="size-3.5" aria-hidden="true" />Export</Button>
+
+              <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
+                <div className="flex items-center gap-1.5 text-muted-foreground">
+                  <span>Status :</span>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
+                  >
+                    <option value="All">All Status</option>
+                    <option value="Suggested">Suggested</option>
+                    <option value="Adjusted">Adjusted</option>
+                    <option value="Voucher created">Voucher created</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+                  <Calendar className="size-3.5" />
+                  <span>24/11/2026</span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8"
+                  onClick={() => exportCsv("deposit-proposal.csv", proposal.lines.map((line) => ({ Bank: line.bankName, Rank: line.rank, Amount: line.amount, Rate: `${line.annualRate}%`, Tenor: `${line.tenorDays} days`, Maturity: line.maturityDate, Reason: line.reason })))}
+                >
+                  <Download className="mr-1.5 size-3.5" aria-hidden="true" />
+                  Export
+                </Button>
+              </div>
             </div>
+
             <div className="table-wrap">
               <table className="table-reference">
                 <thead>
@@ -1310,7 +1361,7 @@ function AllocationView({
                   </tr>
                 </thead>
                 <tbody>
-                  {proposal.lines.map((line, idx) => (
+                  {filteredLines.map((line, idx) => (
                     <tr key={line.id}>
                       <td className="text-center">
                         <div className="inline-flex items-center gap-1">
@@ -1345,6 +1396,11 @@ function AllocationView({
                   ))}
                 </tbody>
               </table>
+              {!filteredLines.length ? (
+                <div className="py-8">
+                  <EmptyState title="No placements match filter" description="Try clearing search or changing the status filter." />
+                </div>
+              ) : null}
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border p-4">
               <div className="flex items-center gap-2 text-xs text-positive"><CheckCircle2 className="size-4" aria-hidden="true" />No configured limit violations</div>
@@ -1352,69 +1408,76 @@ function AllocationView({
             </div>
           </div>
 
-          <div className="space-y-4 xl:col-span-4">
+          {/* Parameters & Constraints - Horizontal 3-Column Layout */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             {/* 1. Financial Constraints */}
-            <Panel>
-              <PanelHeading title="1. Financial constraints" detail="Mandatory liquidity & equity guardrails" />
-              <div className="space-y-3">
-                <ConstraintRow
-                  label="No negative ending balance"
-                  value={`Ending cash: ${formatCompactRupiah(Math.max(0, workspace.parameters.availableCash - total))}`}
-                  status="Satisfied"
-                />
-                <ConstraintRow
-                  label="Maximum TD < 30% of equity"
-                  value={`${((afterPlacement / workspace.parameters.equity) * 100).toFixed(1)}% / ${workspace.parameters.maxEquityPercent}% cap`}
-                  status="Within limit"
-                />
-                <ConstraintRow
-                  label="Deposit trigger (> IDR 500M)"
-                  value={`${formatCompactRupiah(workspace.parameters.availableCash)} > ${formatCompactRupiah(workspace.parameters.depositTrigger)}`}
-                  status="Triggered"
-                />
-                <ConstraintRow
-                  label="Min. placement (> IDR 100M)"
-                  value={`Min. ${formatCompactRupiah(workspace.parameters.minimumPlacement)} / bank`}
-                  status="Satisfied"
-                />
+            <Panel className="flex flex-col justify-between">
+              <div>
+                <PanelHeading title="1. Financial constraints" detail="Mandatory liquidity & equity guardrails" />
+                <div className="mt-1 space-y-3">
+                  <ConstraintRow
+                    label="No negative ending balance"
+                    value={`Ending cash: ${formatCompactRupiah(Math.max(0, workspace.parameters.availableCash - total))}`}
+                    status="Satisfied"
+                  />
+                  <ConstraintRow
+                    label="Maximum TD < 30% of equity"
+                    value={`${((afterPlacement / workspace.parameters.equity) * 100).toFixed(1)}% / ${workspace.parameters.maxEquityPercent}% cap`}
+                    status="Within limit"
+                  />
+                  <ConstraintRow
+                    label="Deposit trigger (> IDR 500M)"
+                    value={`${formatCompactRupiah(workspace.parameters.availableCash)} > ${formatCompactRupiah(workspace.parameters.depositTrigger)}`}
+                    status="Triggered"
+                  />
+                  <ConstraintRow
+                    label="Min. placement (> IDR 100M)"
+                    value={`Min. ${formatCompactRupiah(workspace.parameters.minimumPlacement)} / bank`}
+                    status="Satisfied"
+                  />
+                </div>
               </div>
             </Panel>
 
             {/* 2. Calendar & Timing Constraints */}
-            <Panel>
-              <PanelHeading title="2. Calendar & timing constraints" detail="Settlement & clearing verification" />
-              <div className="space-y-3">
-                <ConstraintRow label="National holiday calendar" value="16 official Indonesian holidays" status="Checked" />
-                <ConstraintRow label="IDBM calendar (PUAB)" value="Money market business days" status="Operational" />
-                <ConstraintRow label="Bank Indonesia calendar" value="BI-RTGS & clearing settlement" status="Aligned" />
-                <ConstraintRow label="Each bank due date pattern" value="Following Business Day convention" status="Enforced" />
+            <Panel className="flex flex-col justify-between">
+              <div>
+                <PanelHeading title="2. Calendar & timing constraints" detail="Settlement & clearing verification" />
+                <div className="mt-1 space-y-3">
+                  <ConstraintRow label="National holiday calendar" value="16 official Indonesian holidays" status="Checked" />
+                  <ConstraintRow label="IDBM calendar (PUAB)" value="Money market business days" status="Operational" />
+                  <ConstraintRow label="Bank Indonesia calendar" value="BI-RTGS & clearing settlement" status="Aligned" />
+                  <ConstraintRow label="Each bank due date pattern" value="Following Business Day convention" status="Enforced" />
+                </div>
               </div>
             </Panel>
 
             {/* 3. Optimization Parameters */}
-            <Panel>
-              <PanelHeading title="3. Optimization parameters" detail="Yield & risk diversification rules" />
-              <div className="space-y-3 text-xs leading-5 text-muted-foreground">
-                <div className="flex items-start justify-between border-b border-border pb-2">
-                  <div>
-                    <p className="font-medium text-foreground">Deposit interest rate</p>
-                    <p className="text-[11px]">Ranked to maximize return ({proposal.lines[0]?.annualRate ?? 5.4}% top rate)</p>
+            <Panel className="flex flex-col justify-between">
+              <div>
+                <PanelHeading title="3. Optimization parameters" detail="Yield & risk diversification rules" />
+                <div className="mt-1 space-y-3 text-xs leading-5 text-muted-foreground">
+                  <div className="flex items-start justify-between border-b border-border pb-2">
+                    <div>
+                      <p className="font-medium text-foreground">Deposit interest rate</p>
+                      <p className="text-[11px]">Ranked to maximize return ({proposal.lines[0]?.annualRate ?? 5.4}% top rate)</p>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-semibold text-positive">Optimized</span>
                   </div>
-                  <span className="shrink-0 text-[10px] font-semibold text-positive">Optimized</span>
-                </div>
-                <div className="flex items-start justify-between border-b border-border pb-2">
-                  <div>
-                    <p className="font-medium text-foreground">Bank allocation percentage</p>
-                    <p className="text-[11px]">BCA 30%, Mandiri 25%, BNI 20%, CIMB 15%, Danamon 10%</p>
+                  <div className="flex items-start justify-between border-b border-border pb-2">
+                    <div>
+                      <p className="font-medium text-foreground">Bank allocation percentage</p>
+                      <p className="text-[11px]">BCA 30%, Mandiri 25%, BNI 20%, CIMB 15%, Danamon 10%</p>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-semibold text-positive">Enforced</span>
                   </div>
-                  <span className="shrink-0 text-[10px] font-semibold text-positive">Enforced</span>
-                </div>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">Bank balance / Diversification</p>
-                    <p className="text-[11px]">Balanced across {proposal.lines.length} partner institutions</p>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="font-medium text-foreground">Bank balance / Diversification</p>
+                      <p className="text-[11px]">Balanced across {proposal.lines.length} partner institutions</p>
+                    </div>
+                    <span className="shrink-0 text-[10px] font-semibold text-positive">Diversified</span>
                   </div>
-                  <span className="shrink-0 text-[10px] font-semibold text-positive">Diversified</span>
                 </div>
               </div>
               <div className="mt-4 border-t border-border pt-3 text-[10px] text-muted-foreground">Parameters verified · Deterministic calculation · No AI</div>
