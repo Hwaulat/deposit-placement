@@ -2369,20 +2369,55 @@ function MasterDataView({
       label: "Placement Parameters",
       icon: <SlidersHorizontal className="size-3.5" />,
       content: (
-        <form onSubmit={save} className="max-w-3xl pt-2">
+        <form onSubmit={save} className="w-full pt-2">
           <div className="mb-5">
             <h2 className="text-sm font-semibold text-foreground">Placement constraints</h2>
             <p className="mt-1 text-xs text-muted-foreground">Values shown here are editable sample parameters.</p>
           </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <ParameterInput label="Deposit trigger (IDR)" value={draft.depositTrigger} onChange={(value) => setDraft({ ...draft, depositTrigger: value })} />
-            <ParameterInput label="Maximum deposits (% of equity)" value={draft.maxEquityPercent} onChange={(value) => setDraft({ ...draft, maxEquityPercent: value })} />
-            <ParameterInput label="Minimum placement (IDR)" value={draft.minimumPlacement} onChange={(value) => setDraft({ ...draft, minimumPlacement: value })} />
-            <ParameterInput label="Equity (IDR)" value={draft.equity} onChange={(value) => setDraft({ ...draft, equity: value })} />
-            <ParameterInput label="Existing deposits (IDR)" value={draft.existingDeposits} onChange={(value) => setDraft({ ...draft, existingDeposits: value })} />
-            <ParameterInput label="Available cash (IDR)" value={draft.availableCash} onChange={(value) => setDraft({ ...draft, availableCash: value })} />
+          <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-2">
+            <ParameterInput
+              label="Deposit trigger (IDR)"
+              value={draft.depositTrigger}
+              onChange={(value) => setDraft({ ...draft, depositTrigger: value })}
+              prefix="Rp."
+              isCurrency
+            />
+            <ParameterInput
+              label="Maximum deposits (% of equity)"
+              value={draft.maxEquityPercent}
+              onChange={(value) => setDraft({ ...draft, maxEquityPercent: value })}
+              suffix="%"
+            />
+            <ParameterInput
+              label="Minimum placement (IDR)"
+              value={draft.minimumPlacement}
+              onChange={(value) => setDraft({ ...draft, minimumPlacement: value })}
+              prefix="Rp."
+              isCurrency
+            />
+            <ParameterInput
+              label="Equity (IDR)"
+              value={draft.equity}
+              onChange={(value) => setDraft({ ...draft, equity: value })}
+              prefix="Rp."
+              isCurrency
+            />
+            <ParameterInput
+              label="Existing deposits (IDR)"
+              value={draft.existingDeposits}
+              onChange={(value) => setDraft({ ...draft, existingDeposits: value })}
+              prefix="Rp."
+              isCurrency
+            />
+            <ParameterInput
+              label="Available cash (IDR)"
+              value={draft.availableCash}
+              onChange={(value) => setDraft({ ...draft, availableCash: value })}
+              prefix="Rp."
+              isCurrency
+            />
           </div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+          <div className="mt-5 flex w-full flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
             <Button type="button" variant="outline" size="sm" onClick={onResetDefaults}>
               <RefreshCw className="mr-1.5 size-3.5" />
               Reset demo defaults
@@ -2472,11 +2507,78 @@ function MasterDataView({
   );
 }
 
-function ParameterInput({ label, value, onChange }: { label: string; value: number; onChange: (value: number) => void }) {
+function ParameterInput({
+  label,
+  value,
+  onChange,
+  prefix,
+  suffix,
+  isCurrency = false,
+  className,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+  prefix?: string;
+  suffix?: string;
+  isCurrency?: boolean;
+  className?: string;
+}) {
+  const [displayValue, setDisplayValue] = useState(() =>
+    isCurrency ? (value ? value.toLocaleString("id-ID") : "") : String(value ?? 0)
+  );
+
+  useEffect(() => {
+    if (isCurrency) {
+      setDisplayValue(value ? value.toLocaleString("id-ID") : "");
+    } else {
+      setDisplayValue(String(value ?? 0));
+    }
+  }, [value, isCurrency]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value;
+    if (isCurrency) {
+      const digits = raw.replace(/\D/g, "");
+      if (!digits) {
+        setDisplayValue("");
+        onChange(0);
+        return;
+      }
+      const num = Number(digits);
+      setDisplayValue(num.toLocaleString("id-ID"));
+      onChange(num);
+    } else {
+      setDisplayValue(raw);
+      const num = parseFloat(raw);
+      onChange(isNaN(num) ? 0 : num);
+    }
+  };
+
   return (
-    <label className="block">
+    <label className={cn("block w-full", className)}>
       <span className="mb-1.5 block text-xs font-medium text-foreground">{label}</span>
-      <Input type="number" min="0" step="any" value={value} onChange={(event) => onChange(Number(event.target.value))} />
+      <div className="flex w-full items-stretch rounded-lg border border-input bg-background shadow-2xs transition-all focus-within:border-[#1F5AA6] focus-within:ring-2 focus-within:ring-[#1F5AA6]/20">
+        {prefix ? (
+          <span className="inline-flex items-center px-3 text-xs font-semibold text-muted-foreground bg-muted/60 dark:bg-muted/30 border-r border-input select-none shrink-0">
+            {prefix}
+          </span>
+        ) : null}
+        <input
+          type={isCurrency ? "text" : "number"}
+          inputMode={isCurrency ? "numeric" : "decimal"}
+          min={0}
+          step={isCurrency ? undefined : "any"}
+          value={displayValue}
+          onChange={handleChange}
+          className="h-9 w-full min-w-0 flex-1 bg-transparent px-3 py-1 text-sm font-mono tabular-nums text-foreground placeholder:text-muted-foreground focus:outline-none"
+        />
+        {suffix ? (
+          <span className="inline-flex items-center px-3 text-xs font-semibold text-muted-foreground bg-muted/60 dark:bg-muted/30 border-l border-input select-none shrink-0">
+            {suffix}
+          </span>
+        ) : null}
+      </div>
     </label>
   );
 }
@@ -2803,7 +2905,7 @@ function BankEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader><DialogTitle>Edit bank ranking</DialogTitle><DialogDescription>{bank?.name ?? "Update bank details"} · applies to the next calculation.</DialogDescription></DialogHeader>
-        {draft ? <form onSubmit={submit} className="space-y-4"><div className="grid grid-cols-2 gap-3"><ParameterInput label="Rank" value={draft.rank} onChange={(value) => setDraft({ ...draft, rank: value })} /><ParameterInput label="Deposit rate (%)" value={draft.depositRate} onChange={(value) => setDraft({ ...draft, depositRate: value })} /><ParameterInput label="Maximum allocation share (%)" value={draft.maxAllocationPercent} onChange={(value) => setDraft({ ...draft, maxAllocationPercent: value })} /><label className="flex items-center gap-2 self-end pb-2 text-xs text-foreground"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} />Active for placement</label></div><DialogFooter><Button type="submit" className="btn-blue"><Check className="size-4" aria-hidden="true" />Save bank</Button></DialogFooter></form> : null}
+        {draft ? <form onSubmit={submit} className="space-y-4"><div className="grid grid-cols-2 gap-3"><ParameterInput label="Rank" value={draft.rank} onChange={(value) => setDraft({ ...draft, rank: value })} /><ParameterInput label="Deposit rate (%)" value={draft.depositRate} onChange={(value) => setDraft({ ...draft, depositRate: value })} suffix="%" /><ParameterInput label="Maximum allocation share (%)" value={draft.maxAllocationPercent} onChange={(value) => setDraft({ ...draft, maxAllocationPercent: value })} suffix="%" /><label className="flex items-center gap-2 self-end pb-2 text-xs text-foreground"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} />Active for placement</label></div><DialogFooter><Button type="submit" className="btn-blue"><Check className="size-4" aria-hidden="true" />Save bank</Button></DialogFooter></form> : null}
       </DialogContent>
     </Dialog>
   );
