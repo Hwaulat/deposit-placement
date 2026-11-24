@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Activity,
-  Archive,
   ArrowDownRight,
   ArrowLeftRight,
   ArrowRight,
@@ -106,7 +105,6 @@ type WorkspaceView =
   | "ranking"
   | "instructions"
   | "reports"
-  | "archive"
   | "settings";
 
 type Theme = "light" | "dark";
@@ -129,7 +127,6 @@ const NAV_GROUPS: { label: string; items: { id: WorkspaceView; label: string; ic
     items: [
       { id: "reports", label: "Reports", icon: FileText },
       { id: "instructions", label: "Bank Instructions", icon: Send },
-      { id: "archive", label: "Data Archive", icon: Archive },
     ],
   },
   {
@@ -170,11 +167,6 @@ const PAGE_META: Record<WorkspaceView, { title: string; description: string; ico
     title: "Reports",
     description: "Compare projected cash movement and deposit positions.",
     icon: FileText,
-  },
-  archive: {
-    title: "Data Archive",
-    description: "Find submitted forms, reports and bank instruction records.",
-    icon: Archive,
   },
   settings: {
     title: "Master Data",
@@ -1996,212 +1988,6 @@ function ReportsView({
   );
 }
 
-function ArchiveView({
-  workspace,
-  onExport,
-  onExportAudit,
-}: {
-  workspace: WorkspaceData;
-  onExport: () => void;
-  onExportAudit: () => void;
-}) {
-  const [tab, setTab] = useState<"documents" | "audit">("documents");
-  const [query, setQuery] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  const records = useMemo(() => {
-    const entries = [
-      ...workspace.cashflows.map((item) => ({ id: item.id, name: item.reference, type: "Cash flow form", date: item.dueDate, status: item.status, detail: item.department })),
-      ...workspace.approvals.map((item) => ({ id: item.id, name: item.document, type: item.type, date: item.submittedAt, status: item.status, detail: `Submitted by ${item.submittedBy}` })),
-      ...workspace.instructions.map((item) => ({ id: item.id, name: `${item.bankName} bank instruction`, type: "Bank instruction", date: item.createdAt, status: item.status, detail: item.voucherNumber })),
-    ];
-    return entries.filter((record) => `${record.name} ${record.id} ${record.type} ${record.detail}`.toLowerCase().includes(query.toLowerCase()));
-  }, [workspace, query]);
-
-  const pagedRecords = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return records.slice(start, start + pageSize);
-  }, [records, currentPage, pageSize]);
-
-  const auditRecords = useMemo(() => {
-    return workspace.auditTrail.filter((item) =>
-      `${item.event} ${item.detail} ${item.actor} ${item.id}`.toLowerCase().includes(query.toLowerCase()),
-    );
-  }, [workspace.auditTrail, query]);
-
-  const pagedAudit = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return auditRecords.slice(start, start + pageSize);
-  }, [auditRecords, currentPage, pageSize]);
-
-  return (
-    <div className="space-y-4">
-      <Tabs
-        variant="primary"
-        value={tab}
-        onValueChange={(val) => {
-          setTab(val as "documents" | "audit");
-          setCurrentPage(1);
-        }}
-        items={[
-          {
-            value: "documents",
-            label: "Document Archive",
-            icon: <FileText className="size-3.5" />,
-            badge: records.length,
-            content: null,
-          },
-          {
-            value: "audit",
-            label: "Audit Trail",
-            icon: <Activity className="size-3.5" />,
-            badge: workspace.auditTrail.length,
-            content: null,
-          },
-        ]}
-      />
-
-      {/* Table & Filter Container Card */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
-        <div className="filter-toolbar">
-          <div className="relative min-w-[240px] flex-1">
-            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <input
-              type="text"
-              placeholder={tab === "documents" ? "Search documents by name, id..." : "Search audit trail by event..."}
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 text-xs">
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
-              <Calendar className="size-3.5" />
-              <span>24/11/2026</span>
-            </div>
-
-            <Button variant="outline" size="sm" onClick={tab === "documents" ? onExport : onExportAudit}>
-              <Download className="mr-1.5 size-3.5" />
-              {tab === "documents" ? "Export Archive" : "Export Audit"}
-            </Button>
-          </div>
-        </div>
-
-        {tab === "documents" ? (
-          <>
-            <div className="table-wrap">
-              <table className="table-reference">
-                <thead>
-                  <tr>
-                    <th className="w-20 text-center">ACTION</th>
-                    <th className="w-12 text-center">NO.</th>
-                    <th>
-                      <div className="flex items-center gap-1">
-                        <span>DOCUMENT</span>
-                        <ChevronsUpDown className="size-3" />
-                      </div>
-                    </th>
-                    <th>TYPE</th>
-                    <th>DETAIL</th>
-                    <th>DATE</th>
-                    <th className="text-center">STATUS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedRecords.map((record, index) => (
-                    <tr key={`${record.type}-${record.id}`}>
-                      <td className="text-center">
-                        <button
-                          type="button"
-                          onClick={() => toast.info(`Viewing archive: ${record.name}`)}
-                          className="action-btn-circle"
-                          title="View"
-                          aria-label="View"
-                        >
-                          <Eye className="size-3.5" />
-                        </button>
-                      </td>
-                      <td className="text-center font-mono text-muted-foreground">
-                        {(currentPage - 1) * pageSize + index + 1}
-                      </td>
-                      <td>
-                        <div className="font-semibold text-foreground">{record.name}</div>
-                        <div className="text-[10px] text-muted-foreground">{record.id}</div>
-                      </td>
-                      <td>{record.type}</td>
-                      <td>{record.detail}</td>
-                      <td className="whitespace-nowrap font-mono text-[11px]">{formatDate(record.date)}</td>
-                      <td className="text-center"><StatusBadge status={record.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <PaginationBar
-              currentPage={currentPage}
-              totalItems={records.length}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setCurrentPage(1);
-              }}
-            />
-          </>
-        ) : (
-          <>
-            <div className="table-wrap">
-              <table className="table-reference">
-                <thead>
-                  <tr>
-                    <th className="w-12 text-center">NO.</th>
-                    <th>TIMESTAMP</th>
-                    <th>ACTION / EVENT</th>
-                    <th>DETAILS</th>
-                    <th>ACTOR</th>
-                    <th>ID</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pagedAudit.map((record, index) => (
-                    <tr key={record.id}>
-                      <td className="text-center font-mono text-muted-foreground">
-                        {(currentPage - 1) * pageSize + index + 1}
-                      </td>
-                      <td className="whitespace-nowrap font-mono text-[11px]">
-                        {new Date(record.occurredAt).toLocaleString("id-ID", { dateStyle: "short", timeStyle: "medium" })}
-                      </td>
-                      <td className="font-semibold text-foreground">{record.event}</td>
-                      <td>{record.detail}</td>
-                      <td><span className="step-pill">{record.actor}</span></td>
-                      <td className="font-mono text-[10px] text-muted-foreground">{record.id}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <PaginationBar
-              currentPage={currentPage}
-              totalItems={auditRecords.length}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(size) => {
-                setPageSize(size);
-                setCurrentPage(1);
-              }}
-            />
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function MasterDataView({
   parameters,
   onSaveParameters,
@@ -3526,7 +3312,6 @@ export default function DepositDesk() {
 
   const exportCashflows = () => exportCsv("cash-flow-register.csv", workspace.cashflows.map((item) => ({ Reference: item.reference, ID: item.id, Department: item.department, Category: item.category, Direction: item.direction, Source: item.source, AmountIDR: item.amount, DueDate: item.dueDate, Status: item.status })));
   const exportAllocation = () => exportCsv("deposit-proposal.csv", workspace.proposal.lines.map((line) => ({ Bank: line.bankName, Rank: line.rank, AmountIDR: line.amount, Rate: `${line.annualRate}%`, TenorDays: line.tenorDays, MaturityDate: line.maturityDate, Reason: line.reason })));
-  const exportAuditTrail = () => exportCsv("audit-trail.csv", workspace.auditTrail.map((record) => ({ Timestamp: record.occurredAt, Action: record.event, Details: record.detail, Actor: record.actor, ID: record.id })));
   const printPage = () => window.print();
 
   const resetDefaults = () => {
@@ -3605,7 +3390,6 @@ export default function DepositDesk() {
           {activeView === "ranking" ? <BankRankingView banks={workspace.banks} onEdit={setEditingBank} onConfigureTemplate={setTemplateBank} onExport={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: String(bank.active) })))} /> : null}
           {activeView === "instructions" ? <InstructionsView instructions={workspace.instructions} canCreate={workspace.allocationState === "Voucher created"} onCreate={createInstructions} onMarkSent={markInstructionSent} onPrint={(item) => setPrintingInstruction(item)} /> : null}
           {activeView === "reports" ? <ReportsView workspace={workspace} onPrint={printPage} onExport={(kind) => kind === "cashflow" ? exportCashflows() : kind === "allocation" ? exportAllocation() : exportCsv("deposit-position.csv", workspace.banks.map((bank) => ({ Bank: bank.name, DepositBalanceIDR: bank.depositBalance, SharePercent: ((bank.depositBalance / Math.max(1, workspace.parameters.existingDeposits)) * 100).toFixed(1), Rate: bank.depositRate, Rank: bank.rank })))} /> : null}
-          {activeView === "archive" ? <ArchiveView workspace={workspace} onExport={() => exportCsv("data-archive.csv", [...workspace.cashflows.map((item) => ({ ID: item.id, Document: item.reference, Type: "Cash flow form", Date: item.dueDate, Status: item.status })), ...workspace.approvals.map((item) => ({ ID: item.id, Document: item.document, Type: item.type, Date: item.submittedAt, Status: item.status })), ...workspace.instructions.map((item) => ({ ID: item.id, Document: `${item.bankName} bank instruction`, Type: "Bank instruction", Date: item.createdAt, Status: item.status }))])} onExportAudit={exportAuditTrail} /> : null}
           {activeView === "settings" ? <MasterDataView parameters={workspace.parameters} onSaveParameters={saveParameters} onResetDefaults={resetDefaults} /> : null}
 
           <footer className="mt-8 flex flex-col gap-2 border-t border-border pt-4 text-[10px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
