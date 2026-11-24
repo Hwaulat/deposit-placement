@@ -1146,34 +1146,34 @@ function CashflowView({
               {pagedItems.map((item, index) => (
                 <tr key={item.id}>
                   <td className="text-center">
-                    <div className="inline-flex items-center gap-1">
-                      <button
+                    <div className="inline-flex items-center gap-1.5">
+                      <Button
                         type="button"
+                        variant="iconView"
                         onClick={() => toast.info(`Viewing details for ${item.reference}`)}
-                        className="action-btn-circle"
                         title="View Details"
                         aria-label="View Details"
                       >
-                        <Eye className="size-3.5" />
-                      </button>
-                      <button
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button
                         type="button"
+                        variant="iconEdit"
                         onClick={() => onValidate(item.id)}
-                        className="action-btn-circle"
                         title={item.status === "Validated" ? "Already Validated" : "Validate"}
                         aria-label="Validate"
                       >
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
                         type="button"
+                        variant="iconDelete"
                         onClick={() => onReturn(item.id)}
-                        className="action-btn-circle"
                         title="Return for Revision"
                         aria-label="Return for Revision"
                       >
-                        <Trash2 className="size-3.5 text-rose-500" />
-                      </button>
+                        <Trash2 className="size-4" />
+                      </Button>
                     </div>
                   </td>
                   <td className="text-center font-mono text-muted-foreground">
@@ -1395,17 +1395,17 @@ function AllocationView({
                   {filteredLines.map((line, idx) => (
                     <tr key={line.id}>
                       <td className="text-center">
-                        <div className="inline-flex items-center gap-1">
-                          <button
+                        <div className="inline-flex items-center gap-1.5">
+                          <Button
                             type="button"
+                            variant="iconEdit"
                             onClick={() => onEdit(line)}
                             disabled={workspace.allocationState !== "Draft"}
-                            className="action-btn-circle disabled:opacity-40"
                             title="Adjust Allocation"
                             aria-label="Adjust Allocation"
                           >
-                            <Pencil className="size-3.5" />
-                          </button>
+                            <Pencil className="size-4" />
+                          </Button>
                         </div>
                       </td>
                       <td className="text-center font-mono text-muted-foreground">{idx + 1}</td>
@@ -1657,34 +1657,34 @@ function BankRankingView({
               {pagedBanks.map((bank) => (
                 <tr key={bank.id}>
                   <td className="text-center">
-                    <div className="inline-flex items-center gap-1">
-                      <button
+                    <div className="inline-flex items-center gap-1.5">
+                      <Button
                         type="button"
+                        variant="iconView"
                         onClick={() => toast.info(`Viewing details for ${bank.name}`)}
-                        className="action-btn-circle"
                         title="View Bank"
                         aria-label="View Bank"
                       >
-                        <Eye className="size-3.5" />
-                      </button>
-                      <button
+                        <Eye className="size-4" />
+                      </Button>
+                      <Button
                         type="button"
+                        variant="iconEdit"
                         onClick={() => onEdit(bank)}
-                        className="action-btn-circle"
                         title="Edit Bank"
                         aria-label="Edit Bank"
                       >
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button
+                        <Pencil className="size-4" />
+                      </Button>
+                      <Button
                         type="button"
+                        variant="iconView"
                         onClick={() => onConfigureTemplate?.(bank)}
-                        className="action-btn-circle text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
                         title="Configure Voucher PDF Template"
                         aria-label="Configure Voucher PDF Template"
                       >
-                        <FileText className="size-3.5" />
-                      </button>
+                        <FileText className="size-4" />
+                      </Button>
                     </div>
                   </td>
                   <td className="text-center">
@@ -1821,26 +1821,27 @@ function InstructionsView({
               {paged.map((item, index) => (
                 <tr key={item.id}>
                   <td className="text-center">
-                    <div className="inline-flex items-center gap-1">
-                      <button
+                    <div className="inline-flex items-center gap-1.5">
+                      <Button
                         type="button"
+                        variant="iconView"
                         onClick={() => onPrint(item)}
-                        className="action-btn-circle"
                         title="Print / View Letter"
                         aria-label="Print / View Letter"
                       >
-                        <Eye className="size-3.5" />
-                      </button>
+                        <Eye className="size-4" />
+                      </Button>
                       {item.status !== "Sent to bank" ? (
-                        <button
+                        <Button
                           type="button"
+                          variant="icon"
+                          intent="success"
                           onClick={() => onMarkSent(item.id)}
-                          className="action-btn-circle"
                           title="Mark Sent to Bank"
                           aria-label="Mark Sent to Bank"
                         >
-                          <Check className="size-3.5 text-emerald-600" />
-                        </button>
+                          <Check className="size-4 text-emerald-600" />
+                        </Button>
                       ) : null}
                     </div>
                   </td>

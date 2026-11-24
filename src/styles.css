@@ -408,7 +408,7 @@
 
   /* Action buttons in table */
   .action-btn-circle {
-    @apply inline-flex size-7 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:bg-muted hover:text-foreground;
+    @apply inline-flex size-8 items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 bg-background text-gray-400 transition-all hover:border-[#1F5AA6] hover:bg-[#EFF4FB] hover:text-[#1F5AA6] dark:hover:bg-[#1F5AA6]/20;
   }
 
   /* Table styling */
