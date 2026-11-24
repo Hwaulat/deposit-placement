@@ -294,7 +294,71 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
   },
 ];
 
-export function addBusinessDays(startDate: string, businessDays: number, holidays: string[] = []) {
+// ── 1. Calendar & Timing Constraints ──
+
+export interface HolidayEntry {
+  date: string;
+  name: string;
+  source: "National Holiday" | "Bank Indonesia" | "IDBM Calendar";
+}
+
+export const INDONESIAN_NATIONAL_HOLIDAYS_2026: HolidayEntry[] = [
+  { date: "2026-01-01", name: "Tahun Baru 2026 Masehi", source: "National Holiday" },
+  { date: "2026-01-16", name: "Isra Mi'raj Nabi Muhammad SAW", source: "National Holiday" },
+  { date: "2026-02-17", name: "Tahun Baru Imlek 2577 Kongzili", source: "National Holiday" },
+  { date: "2026-03-19", name: "Hari Suci Nyepi Saka 1948", source: "National Holiday" },
+  { date: "2026-03-20", name: "Hari Raya Idul Fitri 1447 H (Hari 1)", source: "National Holiday" },
+  { date: "2026-03-21", name: "Hari Raya Idul Fitri 1447 H (Hari 2)", source: "National Holiday" },
+  { date: "2026-04-03", name: "Wafat Yesus Kristus", source: "National Holiday" },
+  { date: "2026-05-01", name: "Hari Buruh Internasional", source: "National Holiday" },
+  { date: "2026-05-14", name: "Kenaikan Yesus Kristus", source: "National Holiday" },
+  { date: "2026-05-27", name: "Hari Raya Idul Adha 1447 H", source: "National Holiday" },
+  { date: "2026-05-31", name: "Hari Raya Waisak 2570 BE", source: "National Holiday" },
+  { date: "2026-06-01", name: "Hari Lahir Pancasila", source: "National Holiday" },
+  { date: "2026-06-16", name: "Tahun Baru Islam 1448 H", source: "National Holiday" },
+  { date: "2026-08-17", name: "Hari Kemerdekaan RI Ke-81", source: "National Holiday" },
+  { date: "2026-08-25", name: "Maulid Nabi Muhammad SAW", source: "National Holiday" },
+  { date: "2026-12-25", name: "Hari Raya Natal", source: "National Holiday" },
+];
+
+export const BI_SETTLEMENT_CLOSURES_2026: HolidayEntry[] = [
+  ...INDONESIAN_NATIONAL_HOLIDAYS_2026.map((h) => ({ ...h, source: "Bank Indonesia" as const })),
+  { date: "2026-12-31", name: "Tutup Buku Tahunan Bank Indonesia (Year-end BI Clearing Close)", source: "Bank Indonesia" },
+];
+
+export const IDBM_CALENDAR_INFO = {
+  name: "Indonesia Interbank Money Market (PUAB / IDBM)",
+  tradingHours: "08:30 - 15:00 WIB",
+  settlementConvention: "T+0 / Same Day Settlement",
+  nonTradingDays: "Sabtu, Minggu & Hari Libur Operasional BI / Nasional",
+  description: "Pasar Uang Antar Bank untuk penempatan instrumen pasar uang dan time deposit rupiah.",
+};
+
+export interface BankDueDatePattern {
+  bankId: string;
+  bankName: string;
+  convention: string;
+  cutOffTime: string;
+  settlementCycle: string;
+  rolloverRule: string;
+}
+
+export const BANK_DUE_DATE_PATTERNS: BankDueDatePattern[] = [
+  { bankId: "bca", bankName: "Bank Central Asia", convention: "Following Business Day", cutOffTime: "14:30 WIB", settlementCycle: "T+0 Same Day", rolloverRule: "Automatic transfer on next business day" },
+  { bankId: "mandiri", bankName: "Bank Mandiri", convention: "Following Business Day", cutOffTime: "15:00 WIB", settlementCycle: "T+0 Same Day", rolloverRule: "Automatic transfer on next business day" },
+  { bankId: "bni", bankName: "Bank Negara Indonesia", convention: "Following Business Day", cutOffTime: "14:30 WIB", settlementCycle: "T+0 Same Day", rolloverRule: "Automatic transfer on next business day" },
+  { bankId: "cimb", bankName: "CIMB Niaga", convention: "Following Business Day", cutOffTime: "14:00 WIB", settlementCycle: "T+0 Same Day", rolloverRule: "Automatic transfer on next business day" },
+  { bankId: "danamon", bankName: "Bank Danamon", convention: "Following Business Day", cutOffTime: "14:00 WIB", settlementCycle: "T+0 Same Day", rolloverRule: "Automatic transfer on next business day" },
+];
+
+export const ALL_FINANCIAL_HOLIDAY_DATES = Array.from(
+  new Set([
+    ...INDONESIAN_NATIONAL_HOLIDAYS_2026.map((h) => h.date),
+    ...BI_SETTLEMENT_CLOSURES_2026.map((h) => h.date),
+  ])
+);
+
+export function addBusinessDays(startDate: string, businessDays: number, holidays: string[] = ALL_FINANCIAL_HOLIDAY_DATES) {
   const date = new Date(`${startDate}T12:00:00Z`);
   let daysAdded = 0;
 
@@ -307,6 +371,7 @@ export function addBusinessDays(startDate: string, businessDays: number, holiday
     }
   }
 
+  // Following Business Day convention: roll forward to next business day if landing on weekend or holiday
   while (date.getUTCDay() === 0 || date.getUTCDay() === 6 || holidays.includes(date.toISOString().slice(0, 10))) {
     date.setUTCDate(date.getUTCDate() + 1);
   }
@@ -337,7 +402,7 @@ export function runAllocationProposal(
   parameters: DepositParameters,
   banks: Bank[],
   asOfDate = "2026-11-24",
-  holidays: string[] = [],
+  holidays: string[] = ALL_FINANCIAL_HOLIDAY_DATES,
 ): AllocationProposal {
   const maximumDeposit = (parameters.equity * parameters.maxEquityPercent) / 100;
   const remainingDepositRoom = Math.max(0, maximumDeposit - parameters.existingDeposits);

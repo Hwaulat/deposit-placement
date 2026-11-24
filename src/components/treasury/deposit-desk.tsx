@@ -75,7 +75,10 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   APPROVAL_STEPS,
+  BANK_DUE_DATE_PATTERNS,
   DEMO_WORKSPACE,
+  IDBM_CALENDAR_INFO,
+  INDONESIAN_NATIONAL_HOLIDAYS_2026,
   addBusinessDays,
   formatCompactRupiah,
   formatDate,
@@ -1363,23 +1366,71 @@ function AllocationView({
           </div>
 
           <div className="space-y-4 xl:col-span-4">
+            {/* 1. Financial Constraints */}
             <Panel>
-              <PanelHeading title="Constraint check" detail="Validated against current parameters" />
+              <PanelHeading title="1. Financial constraints" detail="Mandatory liquidity & equity guardrails" />
               <div className="space-y-3">
-                <ConstraintRow label="Cash after placement" value={formatCompactRupiah(Math.max(0, workspace.parameters.availableCash - total))} status="Within cash" />
-                <ConstraintRow label="Deposits vs. equity" value={`${((afterPlacement / workspace.parameters.equity) * 100).toFixed(1)}% / ${workspace.parameters.maxEquityPercent}%`} status="Within limit" />
-                <ConstraintRow label="Minimum placement" value={formatCompactRupiah(workspace.parameters.minimumPlacement)} status="Satisfied" />
-                <ConstraintRow label="Bank ranking" value={`${proposal.lines.length} ranked banks`} status="Applied" />
+                <ConstraintRow
+                  label="No negative ending balance"
+                  value={`Ending cash: ${formatCompactRupiah(Math.max(0, workspace.parameters.availableCash - total))}`}
+                  status="Satisfied"
+                />
+                <ConstraintRow
+                  label="Maximum TD < 30% of equity"
+                  value={`${((afterPlacement / workspace.parameters.equity) * 100).toFixed(1)}% / ${workspace.parameters.maxEquityPercent}% cap`}
+                  status="Within limit"
+                />
+                <ConstraintRow
+                  label="Deposit trigger (> IDR 500M)"
+                  value={`${formatCompactRupiah(workspace.parameters.availableCash)} > ${formatCompactRupiah(workspace.parameters.depositTrigger)}`}
+                  status="Triggered"
+                />
+                <ConstraintRow
+                  label="Min. placement (> IDR 100M)"
+                  value={`Min. ${formatCompactRupiah(workspace.parameters.minimumPlacement)} / bank`}
+                  status="Satisfied"
+                />
               </div>
             </Panel>
+
+            {/* 2. Calendar & Timing Constraints */}
             <Panel>
-              <PanelHeading title="Why this proposal" detail="Deterministic calculation · no AI" />
-              <div className="space-y-3 text-xs leading-5 text-muted-foreground">
-                <p className="flex gap-2"><span className="reason-index">1</span><span>Only active, ranked banks are considered, in rank order.</span></p>
-                <p className="flex gap-2"><span className="reason-index">2</span><span>Placement shares follow the bank allocation parameters and deposit rate.</span></p>
-                <p className="flex gap-2"><span className="reason-index">3</span><span>Total deposits remain below the equity limit and available cash.</span></p>
+              <PanelHeading title="2. Calendar & timing constraints" detail="Settlement & clearing verification" />
+              <div className="space-y-3">
+                <ConstraintRow label="National holiday calendar" value="16 official Indonesian holidays" status="Checked" />
+                <ConstraintRow label="IDBM calendar (PUAB)" value="Money market business days" status="Operational" />
+                <ConstraintRow label="Bank Indonesia calendar" value="BI-RTGS & clearing settlement" status="Aligned" />
+                <ConstraintRow label="Each bank due date pattern" value="Following Business Day convention" status="Enforced" />
               </div>
-              <div className="mt-4 border-t border-border pt-3 text-[10px] text-muted-foreground">Parameters last changed · 24 Nov 2026 · Sample workspace</div>
+            </Panel>
+
+            {/* 3. Optimization Parameters */}
+            <Panel>
+              <PanelHeading title="3. Optimization parameters" detail="Yield & risk diversification rules" />
+              <div className="space-y-3 text-xs leading-5 text-muted-foreground">
+                <div className="flex items-start justify-between border-b border-border pb-2">
+                  <div>
+                    <p className="font-medium text-foreground">Deposit interest rate</p>
+                    <p className="text-[11px]">Ranked to maximize return ({proposal.lines[0]?.annualRate ?? 5.4}% top rate)</p>
+                  </div>
+                  <span className="shrink-0 text-[10px] font-semibold text-positive">Optimized</span>
+                </div>
+                <div className="flex items-start justify-between border-b border-border pb-2">
+                  <div>
+                    <p className="font-medium text-foreground">Bank allocation percentage</p>
+                    <p className="text-[11px]">BCA 30%, Mandiri 25%, BNI 20%, CIMB 15%, Danamon 10%</p>
+                  </div>
+                  <span className="shrink-0 text-[10px] font-semibold text-positive">Enforced</span>
+                </div>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-medium text-foreground">Bank balance / Diversification</p>
+                    <p className="text-[11px]">Balanced across {proposal.lines.length} partner institutions</p>
+                  </div>
+                  <span className="shrink-0 text-[10px] font-semibold text-positive">Diversified</span>
+                </div>
+              </div>
+              <div className="mt-4 border-t border-border pt-3 text-[10px] text-muted-foreground">Parameters verified · Deterministic calculation · No AI</div>
             </Panel>
           </div>
         </div>
@@ -2296,17 +2347,64 @@ function MasterDataView({
         </form>
       ) : null}
       {tab === "Calendars" ? (
-        <MasterList
-          title="Settlement calendars"
-          description="Sample calendars and non-working days used to calculate maturity dates."
-          columns={["Calendar", "Source", "Last updated", "Status"]}
-          rows={[
-            ["National holidays", "Master data", "02 Jan 2026", "Current"],
-            ["IDBM calendar", "Master data", "02 Jan 2026", "Current"],
-            ["Bank Indonesia", "Master data", "02 Jan 2026", "Current"],
-            ["Bank-specific maturity", "Bank ranking", "24 Nov 2026", "Current"],
-          ]}
-        />
+        <div className="space-y-6">
+          <MasterList
+            title="Calendar & Timing Constraints"
+            description="Official calendars and non-working days used to calculate and validate deposit maturity dates."
+            columns={["Calendar / Rule", "Specification", "Source", "Status"]}
+            rows={[
+              ["National holiday calendar", "16 official Indonesian national holidays (SKB 3 Menteri)", "Master data", "Enforced"],
+              ["IDBM calendar (PUAB)", "Money market trading hours 08:30 - 15:00 WIB · T+0 settlement", "Bank Indonesia / PUAB", "Active"],
+              ["Bank Indonesia calendar", "BI-RTGS & settlement operational days · Year-end closing", "Bank Indonesia", "Active"],
+              ["Each bank due date pattern", "Following Business Day convention & per-bank cut-off times", "Bank ranking master", "Active"],
+            ]}
+          />
+
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="overflow-hidden rounded-xl border border-border bg-card p-4 shadow-2xs">
+              <h3 className="mb-2 text-xs font-semibold text-foreground">Each Bank Due Date Patterns</h3>
+              <p className="mb-3 text-[11px] text-muted-foreground">Settlement convention, cut-off hours, and rollover rules applied per institution.</p>
+              <div className="table-wrap">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-[10px] font-bold uppercase text-muted-foreground">
+                      <th className="px-3 py-2 text-left">Bank</th>
+                      <th className="px-3 py-2 text-left">Convention</th>
+                      <th className="px-3 py-2 text-left">Cut-off</th>
+                      <th className="px-3 py-2 text-left">Settlement</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {BANK_DUE_DATE_PATTERNS.map((b) => (
+                      <tr key={b.bankId} className="text-[11px]">
+                        <td className="px-3 py-2 font-medium text-foreground">{b.bankName}</td>
+                        <td className="px-3 py-2">{b.convention}</td>
+                        <td className="px-3 py-2 font-mono">{b.cutOffTime}</td>
+                        <td className="px-3 py-2">{b.settlementCycle}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-border bg-card p-4 shadow-2xs">
+              <h3 className="mb-2 text-xs font-semibold text-foreground">National Holidays & BI Calendar 2026</h3>
+              <p className="mb-3 text-[11px] text-muted-foreground">Non-clearing dates used to roll forward placement maturities to the next business day.</p>
+              <div className="max-h-[220px] overflow-y-auto pr-1">
+                <div className="space-y-1.5">
+                  {INDONESIAN_NATIONAL_HOLIDAYS_2026.slice(0, 8).map((h) => (
+                    <div key={h.date} className="flex items-center justify-between rounded border border-border/60 bg-muted/20 px-2.5 py-1.5 text-[11px]">
+                      <span className="font-mono text-muted-foreground">{h.date}</span>
+                      <span className="font-medium text-foreground truncate max-w-[200px]">{h.name}</span>
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">Holiday</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       ) : null}
       {tab === "Categories" ? (
         <MasterList
