@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEMO_BANKS,
+  addBusinessDays,
   runAllocationProposal,
+  validateAllocationLines,
+  type AllocationLine,
   type DepositParameters,
 } from "@/lib/deposit-model";
 
@@ -67,5 +70,68 @@ describe("deposit placement rules", () => {
 
     expect(proposal.totalAllocated).toBeLessThanOrEqual(725_000_000);
     expect(proposal.remainingCash).toBeGreaterThanOrEqual(0);
+  });
+
+  it("returns No solution when no active banks are available", () => {
+    const noBanks = runAllocationProposal(parameters({ availableCash: 1_000_000_000 }), []);
+    expect(noBanks.status).toBe("No solution");
+  });
+});
+
+describe("validateAllocationLines", () => {
+  const baseLine: AllocationLine = {
+    id: "AL-1",
+    bankId: "bca",
+    bankName: "BCA",
+    rank: 1,
+    amount: 200_000_000,
+    annualRate: 5.5,
+    tenorDays: 90,
+    maturityDate: "2027-02-24",
+    reason: "Rank 1",
+    status: "Suggested",
+  };
+
+  it("validates compliant allocation line", () => {
+    const res = validateAllocationLines([baseLine], parameters({ availableCash: 500_000_000 }));
+    expect(res.valid).toBe(true);
+  });
+
+  it("rejects line below minimum placement", () => {
+    const invalidLine = { ...baseLine, amount: 50_000_000 };
+    const res = validateAllocationLines([invalidLine], parameters());
+    expect(res.valid).toBe(false);
+    expect(res.message).toContain("at least");
+  });
+
+  it("rejects total placement exceeding available cash", () => {
+    const excessiveLine = { ...baseLine, amount: 800_000_000 };
+    const res = validateAllocationLines([excessiveLine], parameters({ availableCash: 700_000_000 }));
+    expect(res.valid).toBe(false);
+    expect(res.message).toContain("cannot exceed available cash");
+  });
+
+  it("rejects total placement exceeding equity ceiling", () => {
+    const highLine = { ...baseLine, amount: 4_000_000_000 };
+    const res = validateAllocationLines(
+      [highLine],
+      parameters({ equity: 10_000_000_000, maxEquityPercent: 30, availableCash: 5_000_000_000 }),
+    );
+    expect(res.valid).toBe(false);
+    expect(res.message).toContain("cannot exceed 30% of equity");
+  });
+});
+
+describe("addBusinessDays calculation", () => {
+  it("skips weekend days (Saturday and Sunday)", () => {
+    // 2026-11-20 is Friday. Adding 1 business day should be Monday 2026-11-23.
+    const result = addBusinessDays("2026-11-20", 1);
+    expect(result).toBe("2026-11-23");
+  });
+
+  it("skips holidays", () => {
+    // 2026-11-20 is Friday. If Monday 2026-11-23 is a holiday, it should land on Tuesday 2026-11-24.
+    const result = addBusinessDays("2026-11-20", 1, ["2026-11-23"]);
+    expect(result).toBe("2026-11-24");
   });
 });

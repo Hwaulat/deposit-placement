@@ -365,7 +365,7 @@ export function runAllocationProposal(
 
   const eligibleBanks = banks
     .filter((bank) => bank.active && bank.depositRate > 0 && bank.maxAllocationPercent > 0)
-    .toSorted((left, right) => left.rank - right.rank);
+    .sort((left, right) => left.rank - right.rank);
 
   if (eligibleBanks.length === 0) {
     return emptyProposal(
