@@ -3399,10 +3399,46 @@ export default function DepositDesk() {
     }
     setWorkspace((current) => {
       const run = Date.now().toString().slice(-4);
-      const lines = current.proposal.lines.map((line, index) => ({ ...line, status: "Voucher created" as const, voucherNumber: `VCH-26-${run}-${index + 1}` }));
-      return withAudit({ ...current, proposal: { ...current.proposal, lines }, allocationState: "Voucher created" }, "ERP vouchers created", `${lines.length} simulated vouchers · ${lines.map((line) => line.voucherNumber).join(", ")}`, "System (demo)");
+      const now = Date.now().toString().slice(-6);
+      const today = new Date().toISOString().slice(0, 10);
+
+      const lines = current.proposal.lines.map((line, index) => ({
+        ...line,
+        status: "Voucher created" as const,
+        voucherNumber: line.voucherNumber || `VCH-26-${run}-${index + 1}`,
+      }));
+
+      // Generate instructions for each voucher line that doesn't already have one
+      const existingVoucherNumbers = new Set(current.instructions.map((item) => item.voucherNumber));
+      const generatedInstructions: BankInstruction[] = lines
+        .filter((line) => line.voucherNumber && !existingVoucherNumbers.has(line.voucherNumber))
+        .map((line, idx) => {
+          const bank = current.banks.find((b) => b.name === line.bankName || b.id === line.bankId);
+          return {
+            id: `BI-${now}-${line.rank || idx + 1}`,
+            bankName: line.bankName,
+            amount: line.amount,
+            voucherNumber: line.voucherNumber ?? "",
+            maturityDate: line.maturityDate,
+            status: "Draft" as const,
+            template: bank?.template ?? `${line.bankName} · Universal template`,
+            createdAt: today,
+          };
+        });
+
+      return withAudit(
+        {
+          ...current,
+          proposal: { ...current.proposal, lines },
+          instructions: [...generatedInstructions, ...current.instructions],
+          allocationState: "Voucher created",
+        },
+        "ERP vouchers & bank instructions created",
+        `${lines.length} vouchers created, ${generatedInstructions.length} bank instructions generated for Bank Instructions`,
+        "System (demo)"
+      );
     });
-    toast.success("Sample ERP vouchers created without duplicates.");
+    toast.success("Voucher ERP dan Surat Instruksi Bank berhasil dibuat!");
   };
 
   const createInstructions = () => {
