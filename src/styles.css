@@ -445,9 +445,9 @@
     @apply inline-flex items-center justify-center rounded-full bg-[#EFF6FF] dark:bg-blue-950/40 px-3 py-1 text-[11px] font-semibold text-[#2563EB] dark:text-blue-400 border border-[#BFDBFE] dark:border-blue-800/50;
   }
 
-  /* Filter Toolbar Card */
+  /* Filter Toolbar Inside Table Container Card */
   .filter-toolbar {
-    @apply mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-3.5 shadow-xs;
+    @apply flex flex-wrap items-center justify-between gap-3 border-b border-border p-4;
   }
 
   /* Pagination Bar */

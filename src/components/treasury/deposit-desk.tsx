@@ -1035,66 +1035,65 @@ function CashflowView({
         <MiniMetric label="Net cash flow" value={formatCompactRupiah(net)} detail="Current reporting period" tone={net >= 0 ? "positive" : "warning"} />
       </div>
 
-      {/* Filter Toolbar Matching Reference Design */}
-      <div className="filter-toolbar">
-        <div className="relative min-w-[240px] flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <input
-            type="text"
-            placeholder="Search by reference, department, or note..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Group :</span>
-            <select
-              value={groupFilter}
-              onChange={(e) => {
-                setGroupFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-            >
-              <option value="All">All Groups</option>
-              <option value="Department">Department Form</option>
-              <option value="ERP">ERP Feed</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Status :</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-            >
-              <option value="All">All Status</option>
-              <option value="Draft">Draft</option>
-              <option value="Submitted">Submitted</option>
-              <option value="Need revision">Need revision</option>
-              <option value="Validated">Validated</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
-            <Calendar className="size-3.5" />
-            <span>24/11/2026 - 31/12/2026</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Table Card */}
+      {/* Table & Filter Container Card Matching Reference Design */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+        <div className="filter-toolbar">
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search by reference, department, or note..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span>Group :</span>
+              <select
+                value={groupFilter}
+                onChange={(e) => {
+                  setGroupFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
+              >
+                <option value="All">All Groups</option>
+                <option value="Department">Department Form</option>
+                <option value="ERP">ERP Feed</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span>Status :</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
+              >
+                <option value="All">All Status</option>
+                <option value="Draft">Draft</option>
+                <option value="Submitted">Submitted</option>
+                <option value="Need revision">Need revision</option>
+                <option value="Validated">Validated</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+              <Calendar className="size-3.5" />
+              <span>24/11/2026 - 31/12/2026</span>
+            </div>
+          </div>
+        </div>
+
         <div className="table-wrap">
           <table className="table-reference">
             <thead>
@@ -1420,60 +1419,60 @@ function BankRankingView({
         <MiniMetric label="Current deposits" value={formatCompactRupiah(banks.reduce((sum, bank) => sum + bank.depositBalance, 0))} detail="Across ranked institutions" tone="warning" />
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="filter-toolbar">
-        <div className="relative min-w-[240px] flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <input
-            type="text"
-            placeholder="Search by bank name, rating..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Group :</span>
-            <select
-              value={tierFilter}
-              onChange={(e) => setTierFilter(e.target.value)}
-              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-            >
-              <option value="All">All Tiers</option>
-              <option value="KBMI 4">KBMI 4 (Top Tier)</option>
-              <option value="KBMI 3">KBMI 3 (Mid Tier)</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Status :</span>
-            <select
-              value={statusFilter}
+      {/* Table & Filter Container Card */}
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+        <div className="filter-toolbar">
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search by bank name, rating..."
+              value={search}
               onChange={(e) => {
-                setStatusFilter(e.target.value);
+                setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-            >
-              <option value="All">All Status</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+              className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            />
           </div>
 
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
-            <Calendar className="size-3.5" />
-            <span>24/11/2026</span>
+          <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span>Group :</span>
+              <select
+                value={tierFilter}
+                onChange={(e) => setTierFilter(e.target.value)}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
+              >
+                <option value="All">All Tiers</option>
+                <option value="KBMI 4">KBMI 4 (Top Tier)</option>
+                <option value="KBMI 3">KBMI 3 (Mid Tier)</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span>Status :</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
+              >
+                <option value="All">All Status</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+              <Calendar className="size-3.5" />
+              <span>24/11/2026</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
         <div className="table-wrap">
           <table className="table-reference">
             <thead>
@@ -1602,65 +1601,65 @@ function ApprovalsView({
         <MiniMetric label="Completed this cycle" value={String(history.filter((item) => item.status === "Approved").length).padStart(2, "0")} detail="Approval history shown below" tone="positive" />
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="filter-toolbar">
-        <div className="relative min-w-[240px] flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <input
-            type="text"
-            placeholder="Search by document, reference..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Stage :</span>
-            <select
-              value={stageFilter}
-              onChange={(e) => {
-                setStageFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-            >
-              <option value="All">All Stages</option>
-              <option value="0">Step 1: Treasury Head</option>
-              <option value="1">Step 2: Accounting Div Head</option>
-              <option value="2">Step 3: Director</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Status :</span>
-            <select
-              value={statusFilter}
-              onChange={(e) => {
-                setStatusFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-            >
-              <option value="All">All Status</option>
-              <option value="Pending">Waiting / Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Returned">Returned</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
-            <Calendar className="size-3.5" />
-            <span>24/11/2026</span>
-          </div>
-        </div>
-      </div>
-
+      {/* Table & Filter Container Card */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+        <div className="filter-toolbar">
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search by document, reference..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            />
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span>Stage :</span>
+              <select
+                value={stageFilter}
+                onChange={(e) => {
+                  setStageFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
+              >
+                <option value="All">All Stages</option>
+                <option value="0">Step 1: Treasury Head</option>
+                <option value="1">Step 2: Accounting Div Head</option>
+                <option value="2">Step 3: Director</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span>Status :</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
+              >
+                <option value="All">All Status</option>
+                <option value="Pending">Waiting / Pending</option>
+                <option value="Approved">Approved</option>
+                <option value="Returned">Returned</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+              <Calendar className="size-3.5" />
+              <span>24/11/2026</span>
+            </div>
+          </div>
+        </div>
+
         <div className="table-wrap">
           <table className="table-reference">
             <thead>
@@ -1797,49 +1796,49 @@ function InstructionsView({
 
   return (
     <div className="space-y-4">
-      {/* Filter Toolbar */}
-      <div className="filter-toolbar">
-        <div className="relative min-w-[240px] flex-1">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <input
-            type="text"
-            placeholder="Search by instruction ID, bank, voucher..."
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
-          <div className="flex items-center gap-1.5 text-muted-foreground">
-            <span>Status :</span>
-            <select
-              value={statusFilter}
+      {/* Table & Filter Container Card */}
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+        <div className="filter-toolbar">
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Search by instruction ID, bank, voucher..."
+              value={search}
               onChange={(e) => {
-                setStatusFilter(e.target.value);
+                setSearch(e.target.value);
                 setCurrentPage(1);
               }}
-              className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-            >
-              <option value="All">All Status</option>
-              <option value="Draft">Draft</option>
-              <option value="In approval">In approval</option>
-              <option value="Approved">Approved</option>
-              <option value="Sent to bank">Sent to bank</option>
-            </select>
+              className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            />
           </div>
 
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
-            <Calendar className="size-3.5" />
-            <span>24/11/2026</span>
+          <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
+            <div className="flex items-center gap-1.5 text-muted-foreground">
+              <span>Status :</span>
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  setStatusFilter(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
+              >
+                <option value="All">All Status</option>
+                <option value="Draft">Draft</option>
+                <option value="In approval">In approval</option>
+                <option value="Approved">Approved</option>
+                <option value="Sent to bank">Sent to bank</option>
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+              <Calendar className="size-3.5" />
+              <span>24/11/2026</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
         <div className="table-wrap">
           <table className="table-reference">
             <thead>
@@ -2076,36 +2075,36 @@ function ArchiveView({
         </Button>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="filter-toolbar">
-        <div className="relative min-w-[240px] flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <input
-            type="text"
-            placeholder={tab === "documents" ? "Search documents by name, id..." : "Search audit trail by event..."}
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-          />
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
-            <Calendar className="size-3.5" />
-            <span>24/11/2026</span>
+      {/* Table & Filter Container Card */}
+      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+        <div className="filter-toolbar">
+          <div className="relative min-w-[240px] flex-1">
+            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder={tab === "documents" ? "Search documents by name, id..." : "Search audit trail by event..."}
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            />
           </div>
 
-          <Button variant="outline" size="sm" onClick={tab === "documents" ? onExport : onExportAudit}>
-            <Download className="mr-1.5 size-3.5" />
-            {tab === "documents" ? "Export Archive" : "Export Audit"}
-          </Button>
-        </div>
-      </div>
+          <div className="flex flex-wrap items-center gap-3 text-xs">
+            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
+              <Calendar className="size-3.5" />
+              <span>24/11/2026</span>
+            </div>
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
+            <Button variant="outline" size="sm" onClick={tab === "documents" ? onExport : onExportAudit}>
+              <Download className="mr-1.5 size-3.5" />
+              {tab === "documents" ? "Export Archive" : "Export Audit"}
+            </Button>
+          </div>
+        </div>
+
         {tab === "documents" ? (
           <>
             <div className="table-wrap">
