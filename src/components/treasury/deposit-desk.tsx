@@ -8,6 +8,7 @@ import {
   Banknote,
   BadgeCheck,
   Bell,
+  Building2,
   Calendar,
   CalendarDays,
   Check,
@@ -35,6 +36,7 @@ import {
   MoreHorizontal,
   PanelLeft,
   Pencil,
+  Percent,
   Plus,
   RefreshCw,
   Search,
@@ -74,6 +76,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Tabs, type TabItem } from "@/components/ui/custom-tabs";
+import { StatCard, StatCardGrid } from "@/components/ui/stat-card";
 import {
   APPROVAL_STEPS,
   BANK_DUE_DATE_PATTERNS,
@@ -475,17 +478,21 @@ function KpiCard({
   icon: LucideIcon;
   tone?: "default" | "positive" | "warning" | undefined;
 }) {
+  const iconBg =
+    tone === "positive"
+      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+      : tone === "warning"
+        ? "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+        : "bg-blue-50 text-[#1F5AA6] dark:bg-blue-900/30 dark:text-blue-400";
+
   return (
-    <Panel className="kpi-card">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <span className={cn("kpi-icon", `kpi-icon-${tone}`)}>
-          <Icon className="size-4" aria-hidden="true" />
-        </span>
-      </div>
-      <p className="mt-4 font-mono text-[1.35rem] font-medium tabular-nums text-foreground">{value}</p>
-      <p className="mt-2 text-xs text-muted-foreground">{footnote}</p>
-    </Panel>
+    <StatCard
+      title={label}
+      value={value}
+      subtitle={footnote}
+      icon={<Icon className="size-5" />}
+      iconBg={iconBg}
+    />
   );
 }
 
@@ -844,35 +851,39 @@ function DashboardView({
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard
-          label="Total cash balance"
-          value={formatCompactRupiah(workspace.cashBalance)}
-          footnote="Across operating bank accounts"
-          icon={Wallet}
-        />
-        <KpiCard
-          label="Time deposits"
-          value={formatCompactRupiah(totalDeposits)}
-          footnote={`${((totalDeposits / workspace.parameters.equity) * 100).toFixed(1)}% of equity`}
-          icon={Landmark}
-          tone="positive"
-        />
-        <KpiCard
-          label="Available to place"
-          value={formatCompactRupiah(workspace.parameters.availableCash)}
-          footnote="After forecast operating needs"
-          icon={Banknote}
-          tone="positive"
-        />
-        <KpiCard
-          label="Equity deposit limit"
-          value={formatCompactRupiah(depositLimit)}
-          footnote={`${formatCompactRupiah(Math.max(0, depositLimit - totalDeposits))} headroom remaining`}
-          icon={ShieldCheck}
-          tone="warning"
-        />
-      </div>
+      <StatCardGrid
+        columns={4}
+        items={[
+          {
+            title: "Total Cash Balance",
+            value: formatCompactRupiah(workspace.cashBalance),
+            subtitle: "Across operating bank accounts",
+            icon: <Wallet className="size-5 text-[#1F5AA6]" />,
+            iconBg: "bg-blue-50 text-[#1F5AA6] dark:bg-blue-900/30 dark:text-blue-400",
+          },
+          {
+            title: "Time Deposits",
+            value: formatCompactRupiah(totalDeposits),
+            subtitle: `${((totalDeposits / workspace.parameters.equity) * 100).toFixed(1)}% of equity`,
+            icon: <Landmark className="size-5 text-emerald-600" />,
+            iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+          },
+          {
+            title: "Available to Place",
+            value: formatCompactRupiah(workspace.parameters.availableCash),
+            subtitle: "After forecast operating needs",
+            icon: <Banknote className="size-5 text-emerald-600" />,
+            iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+          },
+          {
+            title: "Equity Deposit Limit",
+            value: formatCompactRupiah(depositLimit),
+            subtitle: `${formatCompactRupiah(Math.max(0, depositLimit - totalDeposits))} headroom remaining`,
+            icon: <ShieldCheck className="size-5 text-amber-600" />,
+            iconBg: "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+          },
+        ]}
+      />
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Panel className="xl:col-span-8">
@@ -1046,12 +1057,42 @@ function CashflowView({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <MiniMetric label="Total incoming" value={formatCompactRupiah(incoming)} detail="ERP and department forms" tone="positive" />
-        <MiniMetric label="Total expenditure" value={formatCompactRupiah(outgoing)} detail="Submitted and validated" tone="warning" />
-        <MiniMetric label="Net cash flow" value={formatCompactRupiah(net)} detail="Incoming minus expenditure" tone={net >= 0 ? "positive" : "warning"} />
-        <MiniMetric label="Ending balance projection" value={formatCompactRupiah(workspace.cashBalance + net)} detail={`Starting cash ${formatCompactRupiah(workspace.cashBalance)}`} tone="positive" />
-      </div>
+      <StatCardGrid
+        columns={4}
+        items={[
+          {
+            title: "Total Incoming",
+            value: formatCompactRupiah(incoming),
+            subtitle: "ERP and department forms",
+            icon: <TrendingUp className="size-5 text-emerald-600" />,
+            iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+            valueColor: "text-emerald-600 dark:text-emerald-400",
+          },
+          {
+            title: "Total Expenditure",
+            value: formatCompactRupiah(outgoing),
+            subtitle: "Submitted and validated",
+            icon: <TrendingDown className="size-5 text-rose-600" />,
+            iconBg: "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
+            valueColor: "text-rose-600 dark:text-rose-400",
+          },
+          {
+            title: "Net Cash Flow",
+            value: formatCompactRupiah(net),
+            subtitle: "Incoming minus expenditure",
+            icon: <Activity className="size-5 text-[#1F5AA6]" />,
+            iconBg: "bg-blue-50 text-[#1F5AA6] dark:bg-blue-900/30 dark:text-blue-400",
+            valueColor: net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400",
+          },
+          {
+            title: "Ending Balance Projection",
+            value: formatCompactRupiah(workspace.cashBalance + net),
+            subtitle: `Starting cash ${formatCompactRupiah(workspace.cashBalance)}`,
+            icon: <Wallet className="size-5 text-indigo-600" />,
+            iconBg: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
+          },
+        ]}
+      />
 
       {/* Table & Filter Container Card Matching Reference Design */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
@@ -1228,18 +1269,28 @@ function MiniMetric({
   value,
   detail,
   tone,
+  icon: Icon,
 }: {
   label: string;
   value: string;
   detail: string;
   tone: "positive" | "warning";
+  icon?: LucideIcon;
 }) {
+  const iconBg =
+    tone === "positive"
+      ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+      : "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400";
+
   return (
-    <Panel className="mini-metric">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={cn("mt-2 font-mono text-lg font-medium tabular-nums", tone === "positive" ? "text-positive" : "text-warning")}>{value}</p>
-      <p className="mt-1 text-[11px] text-muted-foreground">{detail}</p>
-    </Panel>
+    <StatCard
+      title={label}
+      value={value}
+      subtitle={detail}
+      icon={Icon ? <Icon className="size-5" /> : undefined}
+      iconBg={iconBg}
+      valueColor={tone === "positive" ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}
+    />
   );
 }
 
@@ -1278,6 +1329,43 @@ function AllocationView({
 
   return (
     <div className="space-y-5">
+      <StatCardGrid
+        columns={4}
+        items={[
+          {
+            title: "Available Cash",
+            value: formatCompactRupiah(workspace.parameters.availableCash),
+            subtitle: "Pre-allocation liquidity",
+            icon: <Banknote className="size-5 text-[#1F5AA6]" />,
+            iconBg: "bg-blue-50 text-[#1F5AA6] dark:bg-blue-900/30 dark:text-blue-400",
+          },
+          {
+            title: "Suggested Placement",
+            value: formatCompactRupiah(total),
+            subtitle: `${proposal.lines.length} bank tranches proposed`,
+            icon: <Landmark className="size-5 text-emerald-600" />,
+            iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+          },
+          {
+            title: "Deposit Limit",
+            value: formatCompactRupiah(depositLimit),
+            subtitle: `${workspace.parameters.maxEquityPercent}% of total equity`,
+            icon: <ShieldCheck className="size-5 text-amber-600" />,
+            iconBg: "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+          },
+          {
+            title: "Limit Used After Placement",
+            value: `${limitUse.toFixed(1)}%`,
+            subtitle: `${formatCompactRupiah(Math.max(0, depositLimit - total))} headroom remaining`,
+            icon: <Activity className="size-5 text-indigo-600" />,
+            iconBg: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
+            badge: limitUse > 100 ? "Over Limit" : "Compliant",
+            badgeColor: limitUse > 100 ? "text-rose-600" : "text-emerald-600",
+            badgeBg: limitUse > 100 ? "bg-rose-50 dark:bg-rose-900/20" : "bg-emerald-50 dark:bg-emerald-900/20",
+          },
+        ]}
+      />
+
       <Panel className="allocation-summary">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
@@ -1303,12 +1391,6 @@ function AllocationView({
               </Button>
             ) : null}
           </div>
-        </div>
-        <div className="mt-6 grid grid-cols-2 gap-4 border-t border-border pt-5 lg:grid-cols-4">
-          <SummaryValue label="Available cash" value={formatCompactRupiah(workspace.parameters.availableCash)} />
-          <SummaryValue label="Suggested placement" value={formatCompactRupiah(total)} />
-          <SummaryValue label="Deposit limit" value={`${workspace.parameters.maxEquityPercent}% · ${formatCompactRupiah(depositLimit)}`} />
-          <SummaryValue label="Limit used after placement" value={`${limitUse.toFixed(1)}%`} />
         </div>
       </Panel>
 
@@ -1566,11 +1648,33 @@ function BankRankingView({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <MiniMetric label="Ranked active banks" value={String(banks.filter((bank) => bank.active).length).padStart(2, "0")} detail="Eligible for placement" tone="positive" />
-        <MiniMetric label="Top annual rate" value={`${Math.max(...banks.map((bank) => bank.depositRate)).toFixed(2)}%`} detail={[...banks].sort((a, b) => b.depositRate - a.depositRate)[0]?.name ?? "No bank"} tone="positive" />
-        <MiniMetric label="Current deposits" value={formatCompactRupiah(banks.reduce((sum, bank) => sum + bank.depositBalance, 0))} detail="Across ranked institutions" tone="warning" />
-      </div>
+      <StatCardGrid
+        columns={3}
+        items={[
+          {
+            title: "Ranked Active Banks",
+            value: String(banks.filter((bank) => bank.active).length).padStart(2, "0"),
+            subtitle: "Eligible for placement",
+            icon: <Building2 className="size-5 text-[#1F5AA6]" />,
+            iconBg: "bg-blue-50 text-[#1F5AA6] dark:bg-blue-900/30 dark:text-blue-400",
+          },
+          {
+            title: "Top Annual Rate",
+            value: `${Math.max(...banks.map((bank) => bank.depositRate)).toFixed(2)}% p.a.`,
+            subtitle: [...banks].sort((a, b) => b.depositRate - a.depositRate)[0]?.name ?? "No bank",
+            icon: <Percent className="size-5 text-emerald-600" />,
+            iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+            valueColor: "text-emerald-600 dark:text-emerald-400",
+          },
+          {
+            title: "Current Deposits",
+            value: formatCompactRupiah(banks.reduce((sum, bank) => sum + bank.depositBalance, 0)),
+            subtitle: "Across ranked institutions",
+            icon: <Landmark className="size-5 text-indigo-600" />,
+            iconBg: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
+          },
+        ]}
+      />
 
       {/* Table & Filter Container Card */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
@@ -1756,6 +1860,42 @@ function InstructionsView({
 
   return (
     <div className="space-y-4">
+      <StatCardGrid
+        columns={4}
+        items={[
+          {
+            title: "Total Instructions",
+            value: instructions.length,
+            subtitle: "Total records generated",
+            icon: <FileText className="size-5 text-[#1F5AA6]" />,
+            iconBg: "bg-blue-50 text-[#1F5AA6] dark:bg-blue-900/30 dark:text-blue-400",
+          },
+          {
+            title: "Total Placed Amount",
+            value: formatCompactRupiah(instructions.reduce((sum, item) => sum + item.amount, 0)),
+            subtitle: "Overall instruction volume",
+            icon: <Banknote className="size-5 text-emerald-600" />,
+            iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+          },
+          {
+            title: "Sent to Bank",
+            value: instructions.filter((item) => item.status === "Sent to bank").length,
+            subtitle: "Delivered to institutions",
+            icon: <Check className="size-5 text-emerald-600" />,
+            iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
+            valueColor: "text-emerald-600 dark:text-emerald-400",
+          },
+          {
+            title: "Draft Instructions",
+            value: instructions.filter((item) => item.status === "Draft").length,
+            subtitle: "Pending dispatch",
+            icon: <Clock3 className="size-5 text-amber-600" />,
+            iconBg: "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400",
+            valueColor: "text-amber-600 dark:text-amber-400",
+          },
+        ]}
+      />
+
       {/* Table & Filter Container Card */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
         <div className="filter-toolbar">
@@ -1903,11 +2043,37 @@ function ReportsView({
   ];
   return (
     <div className="space-y-5">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <MiniMetric label="Total equity" value={formatCompactRupiah(workspace.parameters.equity)} detail="Current parameter set" tone="positive" />
-        <MiniMetric label="Total time deposits" value={formatCompactRupiah(totalDeposits)} detail={`${((totalDeposits / workspace.parameters.equity) * 100).toFixed(1)}% of equity`} tone="positive" />
-        <MiniMetric label="Net forecast cash flow" value={formatCompactRupiah(incoming - outgoing)} detail="Week 48 · IDR" tone={incoming >= outgoing ? "positive" : "warning"} />
-      </div>
+      <StatCardGrid
+        columns={3}
+        items={[
+          {
+            title: "Total Equity",
+            value: formatCompactRupiah(workspace.parameters.equity),
+            subtitle: "Current parameter set",
+            icon: <ShieldCheck className="size-5 text-[#1F5AA6]" />,
+            iconBg: "bg-blue-50 text-[#1F5AA6] dark:bg-blue-900/30 dark:text-blue-400",
+          },
+          {
+            title: "Total Time Deposits",
+            value: formatCompactRupiah(totalDeposits),
+            subtitle: `${((totalDeposits / workspace.parameters.equity) * 100).toFixed(1)}% of equity`,
+            icon: <Landmark className="size-5 text-indigo-600" />,
+            iconBg: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400",
+          },
+          {
+            title: "Net Forecast Cash Flow",
+            value: formatCompactRupiah(incoming - outgoing),
+            subtitle: "Week 48 · IDR",
+            icon: <Activity className="size-5 text-emerald-600" />,
+            iconBg: incoming >= outgoing
+              ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400"
+              : "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
+            valueColor: incoming >= outgoing
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-rose-600 dark:text-rose-400",
+          },
+        ]}
+      />
       <Panel>
         <PanelHeading title="Available reports" detail="Export a spreadsheet or print to PDF." action={<Button variant="outline" size="sm" onClick={onPrint}><Download className="size-3.5" aria-hidden="true" />Print report</Button>} />
         <div className="divide-y divide-border">
