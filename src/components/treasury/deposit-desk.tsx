@@ -1514,10 +1514,12 @@ function ConstraintRow({ label, value, status }: { label: string; value: string;
 function BankRankingView({
   banks,
   onEdit,
+  onConfigureTemplate,
   onExport,
 }: {
   banks: Bank[];
   onEdit: (bank: Bank) => void;
+  onConfigureTemplate?: (bank: Bank) => void;
   onExport: () => void;
 }) {
   const [search, setSearch] = useState("");
@@ -1606,7 +1608,7 @@ function BankRankingView({
           <table className="table-reference">
             <thead>
               <tr>
-                <th className="w-20 text-center">ACTION</th>
+                <th className="w-24 text-center">ACTION</th>
                 <th className="w-12 text-center">RANK</th>
                 <th>
                   <div className="flex items-center gap-1">
@@ -1651,6 +1653,15 @@ function BankRankingView({
                         aria-label="Edit Bank"
                       >
                         <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => onConfigureTemplate?.(bank)}
+                        className="action-btn-circle text-blue-600 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-950/40"
+                        title="Configure Voucher PDF Template"
+                        aria-label="Configure Voucher PDF Template"
+                      >
+                        <FileText className="size-3.5" />
                       </button>
                     </div>
                   </td>
@@ -2243,48 +2254,6 @@ function MasterDataView({
         </div>
       ),
     },
-    {
-      value: "Categories",
-      label: "Cash Flow Categories",
-      icon: <FileSpreadsheet className="size-3.5" />,
-      content: (
-        <div className="pt-2">
-          <MasterList
-            title="Cash flow categories"
-            description="Categories used by department forms and the forecast."
-            columns={["Category", "Direction", "Source", "Status"]}
-            rows={[
-              ["Supplier payment", "Outgoing", "ERP / AP", "Active"],
-              ["Customer collection", "Incoming", "ERP / AR", "Active"],
-              ["Payroll", "Outgoing", "Department form", "Active"],
-              ["Utilities", "Outgoing", "Department form", "Active"],
-              ["Scrap sales", "Incoming", "ERP / forecast", "Active"],
-              ["Sales business plan", "Incoming", "Department form", "Active"],
-            ]}
-          />
-        </div>
-      ),
-    },
-    {
-      value: "Templates",
-      label: "Instruction Templates",
-      icon: <FileText className="size-3.5" />,
-      content: (
-        <div className="pt-2">
-          <MasterList
-            title="Bank instruction templates"
-            description="Templates applied to the bank instruction draft."
-            columns={["Template", "Bank", "Format", "Status"]}
-            rows={[
-              ["BCA — Fixed deposit", "Bank Central Asia", "PDF layout", "Active"],
-              ["Mandiri — Universal", "Bank Mandiri", "Universal", "Active"],
-              ["BNI — Time deposit", "Bank Negara Indonesia", "PDF layout", "Active"],
-              ["CIMB — Placement", "CIMB Niaga", "PDF layout", "Active"],
-            ]}
-          />
-        </div>
-      ),
-    },
   ];
 
   return (
@@ -2626,6 +2595,224 @@ function BankEditDialog({
       <DialogContent>
         <DialogHeader><DialogTitle>Edit bank ranking</DialogTitle><DialogDescription>{bank?.name ?? "Update bank details"} · applies to the next calculation.</DialogDescription></DialogHeader>
         {draft ? <form onSubmit={submit} className="space-y-4"><div className="grid grid-cols-2 gap-3"><ParameterInput label="Rank" value={draft.rank} onChange={(value) => setDraft({ ...draft, rank: value })} /><ParameterInput label="Deposit rate (%)" value={draft.depositRate} onChange={(value) => setDraft({ ...draft, depositRate: value })} /><ParameterInput label="Maximum allocation share (%)" value={draft.maxAllocationPercent} onChange={(value) => setDraft({ ...draft, maxAllocationPercent: value })} /><label className="flex items-center gap-2 self-end pb-2 text-xs text-foreground"><input type="checkbox" checked={draft.active} onChange={(event) => setDraft({ ...draft, active: event.target.checked })} />Active for placement</label></div><DialogFooter><Button type="submit" className="btn-blue"><Check className="size-4" aria-hidden="true" />Save bank</Button></DialogFooter></form> : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const VOUCHER_TEMPLATE_PRESETS = [
+  {
+    id: "BCA — Fixed Deposit PDF Layout",
+    label: "BCA — Fixed Deposit PDF Layout",
+    desc: "Format standar BCA untuk instruksi penempatan deposito berjangka & advis resmi.",
+  },
+  {
+    id: "Mandiri — Universal Corporate Voucher",
+    label: "Mandiri — Universal Corporate Voucher",
+    desc: "Layout voucher formal Mandiri untuk korporasi dengan validasi maker-checker-signer.",
+  },
+  {
+    id: "BNI — Time Deposit Placement Letter",
+    label: "BNI — Time Deposit Placement Letter",
+    desc: "Surat instruksi resmi BNI dengan lampiran rincian debit giro dan nominal pokok.",
+  },
+  {
+    id: "CIMB Niaga — Placement Template",
+    label: "CIMB Niaga — Placement Template",
+    desc: "Template penempatan deposito berjangka CIMB Niaga dengan klausul perpanjangan ARO.",
+  },
+  {
+    id: "Danamon — Standard Term Deposit Letter",
+    label: "Danamon — Standard Term Deposit Letter",
+    desc: "Layout formal Bank Danamon dengan tabel instruksi jatuh tempo & nomor bilyet.",
+  },
+  {
+    id: "Universal — Standard Corporate Placement Voucher",
+    label: "Universal — Standard Corporate Placement Voucher",
+    desc: "Template universal korporat yang kompatibel dengan seluruh bank rekanan.",
+  },
+];
+
+function BankTemplateDialog({
+  bank,
+  open,
+  onOpenChange,
+  onSave,
+}: {
+  bank: Bank | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (bankId: string, template: string) => void;
+}) {
+  const [selectedTemplate, setSelectedTemplate] = useState<string>(
+    bank?.template || (bank ? `${bank.name} — Fixed Deposit PDF Layout` : "Universal — Standard Corporate Placement Voucher")
+  );
+  const [letterheadStyle, setLetterheadStyle] = useState<string>("Official Treasury Letterhead");
+  const [signatoryLevel, setSignatoryLevel] = useState<string>("Dual Signatory (Treasury Head & Finance Director)");
+  const [paperFormat, setPaperFormat] = useState<string>("A4 Portrait");
+  const [includeQrCode, setIncludeQrCode] = useState<boolean>(true);
+  const [notes, setNotes] = useState<string>("");
+
+  useEffect(() => {
+    if (bank) {
+      setSelectedTemplate(bank.template || `${bank.name} — Fixed Deposit PDF Layout`);
+    }
+  }, [bank]);
+
+  if (!bank) return null;
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    onSave(bank.id, selectedTemplate);
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center gap-2">
+            <FileText className="size-5 text-blue-600" />
+            <DialogTitle>Pengaturan Template Voucher & PDF Bank</DialogTitle>
+          </div>
+          <DialogDescription>
+            Pilih dan konfigurasikan layout dokumen PDF surat instruksi dan voucher penempatan deposito untuk <strong>{bank.name}</strong>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+          {/* Bank Info Summary Banner */}
+          <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3.5 py-2.5 text-xs">
+            <div>
+              <span className="font-semibold text-foreground">{bank.name}</span>
+              <span className="ml-2 text-muted-foreground">Rank #{bank.rank} · Rate {bank.depositRate.toFixed(2)}% p.a.</span>
+            </div>
+            <span className="rounded bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-primary">
+              Maks Alokasi: {bank.maxAllocationPercent}%
+            </span>
+          </div>
+
+          {/* Template Preset Selection */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold text-foreground">
+              Pilihan Template Layout Voucher / Surat Instruksi
+            </label>
+            <select
+              value={selectedTemplate}
+              onChange={(e) => setSelectedTemplate(e.target.value)}
+              className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+            >
+              {VOUCHER_TEMPLATE_PRESETS.map((preset) => (
+                <option key={preset.id} value={preset.id}>
+                  {preset.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground">
+              {VOUCHER_TEMPLATE_PRESETS.find((p) => p.id === selectedTemplate)?.desc ?? "Template kustom perbankan untuk keluaran berkas PDF."}
+            </p>
+          </div>
+
+          {/* Options Grid */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Format Kop Surat (Letterhead)</label>
+              <select
+                value={letterheadStyle}
+                onChange={(e) => setLetterheadStyle(e.target.value)}
+                className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+              >
+                <option value="Official Treasury Letterhead">Resmi (PT Korpora Maju Bersama — Treasury)</option>
+                <option value="Compact Corporate Header">Kop Ringkas Perusahaan (Tanpa Alamat Lengkap)</option>
+                <option value="Plain Bank Letter">Format Polos (Tanpa Header PT)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Otorisasi Tanda Tangan</label>
+              <select
+                value={signatoryLevel}
+                onChange={(e) => setSignatoryLevel(e.target.value)}
+                className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+              >
+                <option value="Dual Signatory (Treasury Head & Finance Director)">Dual Signatory (Dept Head & Direktur)</option>
+                <option value="Single Signatory (Treasury Manager)">Single Signatory (Treasury Manager)</option>
+                <option value="Triple Signatory (Treasury, Div Head & Director)">Triple Signatory (Lengkap 3 Tingkat)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-foreground">Ukuran / Orientasi Kertas</label>
+              <select
+                value={paperFormat}
+                onChange={(e) => setPaperFormat(e.target.value)}
+                className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+              >
+                <option value="A4 Portrait">A4 — Portrait (Standar Perbankan)</option>
+                <option value="A4 Landscape">A4 — Landscape</option>
+              </select>
+            </div>
+
+            <div className="flex flex-col justify-end">
+              <label className="flex items-center gap-2 pb-2 text-xs text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={includeQrCode}
+                  onChange={(e) => setIncludeQrCode(e.target.checked)}
+                  className="rounded border-border text-primary focus:ring-primary"
+                />
+                <span>Sertakan QR Code verifikasi otentikasi</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Custom Instruction Notes */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-foreground">Catatan / Klausul Khusus Dokumen Bank (Opsional)</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Contoh: Perpanjangan otomatis pokok & bunga (ARO + Interest), konfirmasi via dealing room..."
+              className="w-full rounded-lg border border-border bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
+            />
+          </div>
+
+          {/* Live Document Preview Box */}
+          <div className="rounded-lg border border-border bg-muted/20 p-3.5">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pratinjau Layout Dokumen PDF</span>
+              <span className="font-mono text-[10px] text-muted-foreground">{paperFormat}</span>
+            </div>
+            <div className="rounded border border-dashed border-border bg-card p-3 shadow-2xs">
+              <div className="flex items-center justify-between border-b border-border pb-2 text-[11px]">
+                <span className="font-bold uppercase text-foreground">{letterheadStyle.split(" (")[0]}</span>
+                <span className="font-mono text-[9px] text-muted-foreground">VCH-PDF-{bank.id.toUpperCase()}</span>
+              </div>
+              <div className="py-2 text-[11px] text-muted-foreground">
+                <div className="font-medium text-foreground">Kepada: {bank.name} — Divisi Corporate Treasury</div>
+                <div className="mt-1 flex items-center justify-between text-[10px]">
+                  <span>Template: <strong className="text-foreground">{selectedTemplate}</strong></span>
+                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Siap Cetak</span>
+                </div>
+              </div>
+              <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
+                <span>Otorisasi: {signatoryLevel}</span>
+                {includeQrCode && <span className="ml-2 font-mono text-[9px] text-emerald-600 dark:text-emerald-400">• QR Verified</span>}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+              Batal
+            </Button>
+            <Button type="submit" className="btn-blue">
+              <Check className="size-4" aria-hidden="true" />
+              Simpan Template Bank
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -2997,6 +3184,7 @@ export default function DepositDesk() {
   const [uploadExcelOpen, setUploadExcelOpen] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState<AllocationLine | null>(null);
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
+  const [templateBank, setTemplateBank] = useState<Bank | null>(null);
   const [printingInstruction, setPrintingInstruction] = useState<BankInstruction | null>(null);
 
   useEffect(() => {
@@ -3194,6 +3382,23 @@ export default function DepositDesk() {
     toast.success("Bank ranking saved.");
   };
 
+  const saveBankTemplate = (bankId: string, template: string) => {
+    const target = workspace.banks.find((b) => b.id === bankId);
+    if (!target) return;
+    setWorkspace((current) =>
+      withAudit(
+        {
+          ...current,
+          banks: current.banks.map((entry) => (entry.id === bankId ? { ...entry, template } : entry)),
+        },
+        "Voucher PDF template updated",
+        `${target.name} · ${template}`
+      )
+    );
+    setTemplateBank(null);
+    toast.success(`Template PDF voucher untuk ${target.name} berhasil diperbarui.`);
+  };
+
   const saveParameters = (parameters: DepositParameters) => {
     if (parameters.maxEquityPercent > 100 || parameters.depositTrigger < 0 || parameters.minimumPlacement < 0 || parameters.equity <= 0) {
       toast.error("Review the parameter values and try again.");
@@ -3231,7 +3436,7 @@ export default function DepositDesk() {
       voucherNumber: line.voucherNumber ?? "",
       maturityDate: line.maturityDate,
       status: "Draft" as const,
-      template: `${line.bankName} · Universal template`,
+      template: workspace.banks.find((b) => b.name === line.bankName || b.id === line.bankId)?.template ?? `${line.bankName} · Universal template`,
       createdAt: new Date().toISOString().slice(0, 10),
     }));
     if (!newInstructions.length) {
@@ -3333,7 +3538,7 @@ export default function DepositDesk() {
           {activeView === "dashboard" ? <DashboardView workspace={workspace} onNavigate={setActiveView} onRunProposal={recalculateProposal} /> : null}
           {activeView === "cashflow" ? <CashflowView workspace={workspace} onValidate={validateCashflow} onReturn={requestRevision} onCalculate={calculateBalance} onExport={exportCashflows} onNewForm={() => setNewFormOpen(true)} /> : null}
           {activeView === "allocation" ? <AllocationView workspace={workspace} onRecalculate={recalculateProposal} onEdit={setEditingAllocation} onAddPlacement={handleAddPlacement} onCreateVoucher={createVouchers} /> : null}
-          {activeView === "ranking" ? <BankRankingView banks={workspace.banks} onEdit={setEditingBank} onExport={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: String(bank.active) })))} /> : null}
+          {activeView === "ranking" ? <BankRankingView banks={workspace.banks} onEdit={setEditingBank} onConfigureTemplate={setTemplateBank} onExport={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: String(bank.active) })))} /> : null}
           {activeView === "instructions" ? <InstructionsView instructions={workspace.instructions} canCreate={workspace.allocationState === "Voucher created"} onCreate={createInstructions} onMarkSent={markInstructionSent} onPrint={(item) => setPrintingInstruction(item)} /> : null}
           {activeView === "reports" ? <ReportsView workspace={workspace} onPrint={printPage} onExport={(kind) => kind === "cashflow" ? exportCashflows() : kind === "allocation" ? exportAllocation() : exportCsv("deposit-position.csv", workspace.banks.map((bank) => ({ Bank: bank.name, DepositBalanceIDR: bank.depositBalance, SharePercent: ((bank.depositBalance / Math.max(1, workspace.parameters.existingDeposits)) * 100).toFixed(1), Rate: bank.depositRate, Rank: bank.rank })))} /> : null}
           {activeView === "archive" ? <ArchiveView workspace={workspace} onExport={() => exportCsv("data-archive.csv", [...workspace.cashflows.map((item) => ({ ID: item.id, Document: item.reference, Type: "Cash flow form", Date: item.dueDate, Status: item.status })), ...workspace.approvals.map((item) => ({ ID: item.id, Document: item.document, Type: item.type, Date: item.submittedAt, Status: item.status })), ...workspace.instructions.map((item) => ({ ID: item.id, Document: `${item.bankName} bank instruction`, Type: "Bank instruction", Date: item.createdAt, Status: item.status }))])} onExportAudit={exportAuditTrail} /> : null}
@@ -3350,6 +3555,7 @@ export default function DepositDesk() {
       <CashflowFormDialog open={newFormOpen} onOpenChange={setNewFormOpen} onSave={addCashflow} />
       <AllocationEditDialog line={editingAllocation} banks={workspace.banks} open={editingAllocation !== null} onOpenChange={(open) => { if (!open) setEditingAllocation(null); }} onSave={editAllocation} />
       <BankEditDialog bank={editingBank} open={editingBank !== null} onOpenChange={(open) => { if (!open) setEditingBank(null); }} onSave={saveBank} />
+      <BankTemplateDialog bank={templateBank} open={templateBank !== null} onOpenChange={(open) => { if (!open) setTemplateBank(null); }} onSave={saveBankTemplate} />
       <InstructionLetterDialog instruction={printingInstruction} open={printingInstruction !== null} onOpenChange={(open) => { if (!open) setPrintingInstruction(null); }} />
       <UploadExcelDialog open={uploadExcelOpen} onOpenChange={setUploadExcelOpen} onImport={handleImportCashflow} />
     </div>

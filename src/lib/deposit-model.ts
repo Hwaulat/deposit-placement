@@ -28,6 +28,7 @@ export interface Bank {
   maxAllocationPercent: number;
   depositBalance: number;
   active: boolean;
+  template?: string;
 }
 
 export interface DepositParameters {
@@ -140,6 +141,7 @@ export const DEMO_BANKS: Bank[] = [
     maxAllocationPercent: 30,
     depositBalance: 600_000_000,
     active: true,
+    template: "BCA — Fixed Deposit PDF Layout",
   },
   {
     id: "mandiri",
@@ -155,6 +157,7 @@ export const DEMO_BANKS: Bank[] = [
     maxAllocationPercent: 25,
     depositBalance: 480_000_000,
     active: true,
+    template: "Mandiri — Universal Corporate Voucher",
   },
   {
     id: "bni",
@@ -170,6 +173,7 @@ export const DEMO_BANKS: Bank[] = [
     maxAllocationPercent: 20,
     depositBalance: 410_000_000,
     active: true,
+    template: "BNI — Time Deposit Placement Letter",
   },
   {
     id: "cimb",
@@ -185,6 +189,7 @@ export const DEMO_BANKS: Bank[] = [
     maxAllocationPercent: 15,
     depositBalance: 340_000_000,
     active: true,
+    template: "CIMB Niaga — Placement Template",
   },
   {
     id: "danamon",
@@ -200,6 +205,7 @@ export const DEMO_BANKS: Bank[] = [
     maxAllocationPercent: 10,
     depositBalance: 320_000_000,
     active: true,
+    template: "Danamon — Standard Term Deposit Letter",
   },
 ];
 
