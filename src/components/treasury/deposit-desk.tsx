@@ -831,7 +831,7 @@ function DashboardView({
         <Panel className="xl:col-span-8">
           <PanelHeading
             title="Cash position forecast"
-            detail="Actual and forecast balance · IDR billions"
+            detail="Actual and forecast balance"
             action={
               <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onNavigate("reports")}>
                 View report <ArrowRight className="size-3.5" aria-hidden="true" />
@@ -857,9 +857,9 @@ function DashboardView({
                 </defs>
                 <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="3 5" />
                 <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickFormatter={(value) => `${value}b`} domain={[7.8, 10]} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} tickFormatter={(value) => formatRupiah(value * 1_000_000_000)} domain={[7.8, 10]} />
                 <Tooltip
-                  formatter={(value) => [`Rp ${Number(value ?? 0).toFixed(2)}bn`, "Balance"]}
+                  formatter={(value) => [formatRupiah(Number(value ?? 0) * 1_000_000_000), "Balance"]}
                   contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: "6px" }}
                   labelStyle={{ color: "var(--foreground)" }}
                   itemStyle={{ color: "var(--foreground)" }}
@@ -872,7 +872,7 @@ function DashboardView({
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-border pt-3 text-xs">
             <span className="text-muted-foreground">Forecast ending balance</span>
-            <span className="font-mono font-medium tabular-nums text-foreground">Rp 9.42bn <span className="ml-1 text-positive">+11.9%</span></span>
+            <span className="font-mono font-medium tabular-nums text-foreground">{formatRupiah(9_420_000_000)} <span className="ml-1 text-positive">+11.9%</span></span>
           </div>
         </Panel>
 
@@ -1426,12 +1426,12 @@ function AllocationView({
                     status="Within limit"
                   />
                   <ConstraintRow
-                    label="Deposit trigger (> IDR 500M)"
+                    label="Deposit trigger (> Rp.500.000.000)"
                     value={`${formatCompactRupiah(workspace.parameters.availableCash)} > ${formatCompactRupiah(workspace.parameters.depositTrigger)}`}
                     status="Triggered"
                   />
                   <ConstraintRow
-                    label="Min. placement (> IDR 100M)"
+                    label="Min. placement (> Rp.100.000.000)"
                     value={`Min. ${formatCompactRupiah(workspace.parameters.minimumPlacement)} / bank`}
                     status="Satisfied"
                   />
@@ -2477,7 +2477,7 @@ function AllocationEditDialog({
                 onChange={(event) => setAmount(event.target.value)}
               />
               <span className="mt-1 block font-mono text-[11px] text-muted-foreground">
-                {amount && Number(amount) > 0 ? formatRupiah(Number(amount)) : "Min. placement Rp 100,000,000"}
+                {amount && Number(amount) > 0 ? formatRupiah(Number(amount)) : "Min. placement Rp.100.000.000"}
               </span>
             </label>
 
@@ -3126,17 +3126,17 @@ export default function DepositDesk() {
     const lines = workspace.proposal.lines.map((line) =>
       line.id === id
         ? {
-            ...line,
-            bankId: targetBank ? targetBank.id : line.bankId,
-            bankName,
-            rank,
-            annualRate,
-            amount,
-            tenorDays,
-            maturityDate: finalMaturityDate,
-            status: "Adjusted" as const,
-            reason: `Manual override · ${reason}`,
-          }
+          ...line,
+          bankId: targetBank ? targetBank.id : line.bankId,
+          bankName,
+          rank,
+          annualRate,
+          amount,
+          tenorDays,
+          maturityDate: finalMaturityDate,
+          status: "Adjusted" as const,
+          reason: `Manual override · ${reason}`,
+        }
         : line
     );
 
@@ -3276,23 +3276,23 @@ export default function DepositDesk() {
             onUploadExcel={activeView === "cashflow" ? () => setUploadExcelOpen(true) : undefined}
             onDownloadExcel={
               activeView === "allocation" ? exportAllocation :
-              activeView === "ranking" ? () => exportCsv("bank-ranking.csv", workspace.banks.map((b) => ({ Rank: b.rank, Bank: b.name, Rate: b.depositRate }))) :
-              activeView === "reports" ? () => exportCsv("deposit-position.csv", workspace.banks.map((b) => ({ Bank: b.name, Balance: b.depositBalance }))) :
-              undefined
+                activeView === "ranking" ? () => exportCsv("bank-ranking.csv", workspace.banks.map((b) => ({ Rank: b.rank, Bank: b.name, Rate: b.depositRate }))) :
+                  activeView === "reports" ? () => exportCsv("deposit-position.csv", workspace.banks.map((b) => ({ Bank: b.name, Balance: b.depositBalance }))) :
+                    undefined
             }
             onCreateNew={
               activeView === "dashboard" ? () => setNewFormOpen(true) :
-              activeView === "cashflow" ? () => setNewFormOpen(true) :
-              activeView === "allocation" ? recalculateProposal :
-              activeView === "instructions" ? createInstructions :
-              undefined
+                activeView === "cashflow" ? () => setNewFormOpen(true) :
+                  activeView === "allocation" ? recalculateProposal :
+                    activeView === "instructions" ? createInstructions :
+                      undefined
             }
             downloadLabel="Download Excel"
             uploadLabel="Upload Excel"
             createLabel={
               activeView === "allocation" ? "Recalculate" :
-              activeView === "instructions" ? "Create Instruction" :
-              "+ Create New"
+                activeView === "instructions" ? "Create Instruction" :
+                  "+ Create New"
             }
           >
             {activeView === "cashflow" ? (

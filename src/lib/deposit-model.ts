@@ -516,22 +516,14 @@ export function validateAllocationLines(
   return { valid: true, message: "The adjustment stays within the current placement limits." };
 }
 
-export function formatRupiah(amount: number) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    maximumFractionDigits: 0,
-  }).format(amount);
+export function formatRupiah(amount: number): string {
+  if (isNaN(amount) || amount === null || amount === undefined) return "Rp.0";
+  const rounded = Math.round(amount);
+  const formatted = new Intl.NumberFormat("id-ID").format(Math.abs(rounded));
+  return rounded < 0 ? `-Rp.${formatted}` : `Rp.${formatted}`;
 }
 
-export function formatCompactRupiah(amount: number) {
-  const absoluteAmount = Math.abs(amount);
-  if (absoluteAmount >= 1_000_000_000) {
-    return `Rp ${(amount / 1_000_000_000).toFixed(2).replace(/0$/, "").replace(/\.0$/, "")}bn`;
-  }
-  if (absoluteAmount >= 1_000_000) {
-    return `Rp ${(amount / 1_000_000).toFixed(0)}m`;
-  }
+export function formatCompactRupiah(amount: number): string {
   return formatRupiah(amount);
 }
 
