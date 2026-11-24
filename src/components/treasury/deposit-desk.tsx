@@ -29,6 +29,7 @@ import {
   FileText,
   Filter,
   Landmark,
+  Layers,
   LayoutDashboard,
   Menu,
   Moon,
@@ -133,43 +134,51 @@ const NAV_GROUPS: { label: string; items: { id: WorkspaceView; label: string; ic
   {
     label: "SETUP SYSTEM",
     items: [
-      { id: "settings", label: "Master Data", icon: Settings2 },
+      { id: "settings", label: "Master Data", icon: Layers },
     ],
   },
 ];
 
-const PAGE_META: Record<WorkspaceView, { title: string; description: string }> = {
+const PAGE_META: Record<WorkspaceView, { title: string; description: string; icon: LucideIcon }> = {
   dashboard: {
-    title: "Treasury Overview",
+    title: "Dashboard",
     description: "Cash position, deposits and decisions in one place.",
+    icon: LayoutDashboard,
   },
   cashflow: {
     title: "Cash Flow",
     description: "Review department submissions and incoming ERP activity.",
+    icon: ArrowLeftRight,
   },
   allocation: {
     title: "Deposit Allocation",
     description: "Review an explainable placement proposal before approval.",
+    icon: Wallet,
   },
   ranking: {
     title: "Bank Ranking",
     description: "Manage deposit rates, service ratings and allocation limits.",
+    icon: Landmark,
   },
   instructions: {
     title: "Bank Instructions",
     description: "Prepare, approve and record printed placement instructions.",
+    icon: Send,
   },
   reports: {
-    title: "Reports & Analytics",
+    title: "Reports",
     description: "Compare projected cash movement and deposit positions.",
+    icon: FileText,
   },
   archive: {
     title: "Data Archive",
     description: "Find submitted forms, reports and bank instruction records.",
+    icon: Archive,
   },
   settings: {
     title: "Master Data",
     description: "Review the parameters, calendars and reference lists in use.",
+    icon: Layers,
   },
 };
 
@@ -396,15 +405,14 @@ function PageHeading({
   children?: React.ReactNode | undefined;
 }) {
   const meta = PAGE_META[activeView];
+  const Icon = meta.icon;
   return (
     <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3">
-        <div className="flex size-9 items-center justify-center rounded-lg border border-border bg-card text-foreground shadow-2xs">
-          <CheckSquare className="size-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">{meta.title}</h1>
-        </div>
+      <div className="flex items-center gap-2.5">
+        <Icon className="size-5 shrink-0 text-slate-800 dark:text-slate-200" aria-hidden="true" />
+        <h1 className="text-lg font-bold tracking-tight text-[#0a386c] dark:text-blue-400 sm:text-xl">
+          {meta.title}
+        </h1>
       </div>
       <div className="flex flex-wrap items-center gap-2.5">
         {onUploadExcel ? (
