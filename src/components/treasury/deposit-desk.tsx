@@ -74,6 +74,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Tabs, type TabItem } from "@/components/ui/custom-tabs";
 import {
   APPROVAL_STEPS,
   BANK_DUE_DATE_PATTERNS,
@@ -1961,32 +1962,30 @@ function ArchiveView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={tab === "documents" ? "default" : "outline"}
-          size="sm"
-          className={cn("h-8 text-xs", tab === "documents" && "bg-primary text-white")}
-          onClick={() => {
-            setTab("documents");
-            setCurrentPage(1);
-          }}
-        >
-          <FileText className="mr-1.5 size-3.5" />
-          Document Archive
-        </Button>
-        <Button
-          variant={tab === "audit" ? "default" : "outline"}
-          size="sm"
-          className={cn("h-8 text-xs", tab === "audit" && "bg-primary text-white")}
-          onClick={() => {
-            setTab("audit");
-            setCurrentPage(1);
-          }}
-        >
-          <Activity className="mr-1.5 size-3.5" />
-          Audit Trail ({workspace.auditTrail.length})
-        </Button>
-      </div>
+      <Tabs
+        variant="primary"
+        value={tab}
+        onValueChange={(val) => {
+          setTab(val as "documents" | "audit");
+          setCurrentPage(1);
+        }}
+        items={[
+          {
+            value: "documents",
+            label: "Document Archive",
+            icon: <FileText className="size-3.5" />,
+            badge: records.length,
+            content: null,
+          },
+          {
+            value: "audit",
+            label: "Audit Trail",
+            icon: <Activity className="size-3.5" />,
+            badge: workspace.auditTrail.length,
+            content: null,
+          },
+        ]}
+      />
 
       {/* Table & Filter Container Card */}
       <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
@@ -2137,31 +2136,20 @@ function MasterDataView({
   onSaveParameters: (next: DepositParameters) => void;
   onResetDefaults: () => void;
 }) {
-  const [tab, setTab] = useState<"Parameters" | "Calendars" | "Categories" | "Templates">("Parameters");
   const [draft, setDraft] = useState(parameters);
   useEffect(() => setDraft(parameters), [parameters]);
   const save = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     onSaveParameters(draft);
   };
-  const tabs = ["Parameters", "Calendars", "Categories", "Templates"] as const;
-  return (
-    <Panel>
-      <div className="mb-5 flex flex-wrap gap-1 border-b border-border pb-3">
-        {tabs.map((item) => (
-          <Button
-            key={item}
-            variant={tab === item ? "secondary" : "ghost"}
-            size="sm"
-            className="h-8 text-xs"
-            onClick={() => setTab(item)}
-          >
-            {item}
-          </Button>
-        ))}
-      </div>
-      {tab === "Parameters" ? (
-        <form onSubmit={save} className="max-w-3xl">
+
+  const tabItems: TabItem[] = [
+    {
+      value: "Parameters",
+      label: "Placement Parameters",
+      icon: <SlidersHorizontal className="size-3.5" />,
+      content: (
+        <form onSubmit={save} className="max-w-3xl pt-2">
           <div className="mb-5">
             <h2 className="text-sm font-semibold text-foreground">Placement constraints</h2>
             <p className="mt-1 text-xs text-muted-foreground">Values shown here are editable sample parameters.</p>
@@ -2188,9 +2176,14 @@ function MasterDataView({
             </div>
           </div>
         </form>
-      ) : null}
-      {tab === "Calendars" ? (
-        <div className="space-y-6">
+      ),
+    },
+    {
+      value: "Calendars",
+      label: "Calendars & Rules",
+      icon: <Calendar className="size-3.5" />,
+      content: (
+        <div className="space-y-6 pt-2">
           <MasterList
             title="Calendar & Timing Constraints"
             description="Official calendars and non-working days used to calculate and validate deposit maturity dates."
@@ -2248,35 +2241,55 @@ function MasterDataView({
             </div>
           </div>
         </div>
-      ) : null}
-      {tab === "Categories" ? (
-        <MasterList
-          title="Cash flow categories"
-          description="Categories used by department forms and the forecast."
-          columns={["Category", "Direction", "Source", "Status"]}
-          rows={[
-            ["Supplier payment", "Outgoing", "ERP / AP", "Active"],
-            ["Customer collection", "Incoming", "ERP / AR", "Active"],
-            ["Payroll", "Outgoing", "Department form", "Active"],
-            ["Utilities", "Outgoing", "Department form", "Active"],
-            ["Scrap sales", "Incoming", "ERP / forecast", "Active"],
-            ["Sales business plan", "Incoming", "Department form", "Active"],
-          ]}
-        />
-      ) : null}
-      {tab === "Templates" ? (
-        <MasterList
-          title="Bank instruction templates"
-          description="Templates applied to the bank instruction draft."
-          columns={["Template", "Bank", "Format", "Status"]}
-          rows={[
-            ["BCA — Fixed deposit", "Bank Central Asia", "PDF layout", "Active"],
-            ["Mandiri — Universal", "Bank Mandiri", "Universal", "Active"],
-            ["BNI — Time deposit", "Bank Negara Indonesia", "PDF layout", "Active"],
-            ["CIMB — Placement", "CIMB Niaga", "PDF layout", "Active"],
-          ]}
-        />
-      ) : null}
+      ),
+    },
+    {
+      value: "Categories",
+      label: "Cash Flow Categories",
+      icon: <FileSpreadsheet className="size-3.5" />,
+      content: (
+        <div className="pt-2">
+          <MasterList
+            title="Cash flow categories"
+            description="Categories used by department forms and the forecast."
+            columns={["Category", "Direction", "Source", "Status"]}
+            rows={[
+              ["Supplier payment", "Outgoing", "ERP / AP", "Active"],
+              ["Customer collection", "Incoming", "ERP / AR", "Active"],
+              ["Payroll", "Outgoing", "Department form", "Active"],
+              ["Utilities", "Outgoing", "Department form", "Active"],
+              ["Scrap sales", "Incoming", "ERP / forecast", "Active"],
+              ["Sales business plan", "Incoming", "Department form", "Active"],
+            ]}
+          />
+        </div>
+      ),
+    },
+    {
+      value: "Templates",
+      label: "Instruction Templates",
+      icon: <FileText className="size-3.5" />,
+      content: (
+        <div className="pt-2">
+          <MasterList
+            title="Bank instruction templates"
+            description="Templates applied to the bank instruction draft."
+            columns={["Template", "Bank", "Format", "Status"]}
+            rows={[
+              ["BCA — Fixed deposit", "Bank Central Asia", "PDF layout", "Active"],
+              ["Mandiri — Universal", "Bank Mandiri", "Universal", "Active"],
+              ["BNI — Time deposit", "Bank Negara Indonesia", "PDF layout", "Active"],
+              ["CIMB — Placement", "CIMB Niaga", "PDF layout", "Active"],
+            ]}
+          />
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <Panel>
+      <Tabs items={tabItems} variant="primary" defaultValue="Parameters" />
     </Panel>
   );
 }

@@ -51,3 +51,4 @@ const TabsContent = React.forwardRef<
 TabsContent.displayName = TabsPrimitive.Content.displayName;
 
 export { Tabs, TabsList, TabsTrigger, TabsContent };
+export { Tabs as CustomTabs, type TabItem, type TabVariant, type TabsProps } from "./custom-tabs";
