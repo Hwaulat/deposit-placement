@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent, type LucideIcon } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Activity,
   Archive,
@@ -37,6 +37,7 @@ import {
   TrendingUp,
   Wallet,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Area,
@@ -1003,7 +1004,7 @@ function BankRankingView({
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <MiniMetric label="Ranked active banks" value={String(banks.filter((bank) => bank.active).length).padStart(2, "0")} detail="Eligible for placement" tone="positive" />
-        <MiniMetric label="Top annual rate" value={`${Math.max(...banks.map((bank) => bank.depositRate)).toFixed(2)}%`} detail={banks.toSorted((a, b) => b.depositRate - a.depositRate)[0]?.name ?? "No bank"} tone="positive" />
+        <MiniMetric label="Top annual rate" value={`${Math.max(...banks.map((bank) => bank.depositRate)).toFixed(2)}%`} detail={[...banks].sort((a, b) => b.depositRate - a.depositRate)[0]?.name ?? "No bank"} tone="positive" />
         <MiniMetric label="Current deposits" value={formatCompactRupiah(banks.reduce((sum, bank) => sum + bank.depositBalance, 0))} detail="Across ranked institutions" tone="warning" />
       </div>
       <Panel>
@@ -1015,7 +1016,7 @@ function BankRankingView({
           <table className="data-table min-w-[940px]">
             <thead><tr><th>Rank</th><th>Bank</th><th>Deposit rate</th><th>Service</th><th>Credit rating</th><th>NPL</th><th>NIM</th><th>CAR</th><th>Max share</th><th>Status</th><th className="text-right">Edit</th></tr></thead>
             <tbody>
-              {banks.toSorted((a, b) => a.rank - b.rank).map((bank) => (
+              {[...banks].sort((a, b) => a.rank - b.rank).map((bank) => (
                 <tr key={bank.id}>
                   <td><span className="rank-mark rank-mark-large">{String(bank.rank).padStart(2, "0")}</span></td>
                   <td><div className="font-medium text-foreground">{bank.name}</div><div className="mt-1 text-[10px] text-muted-foreground">Deposit balance · {formatCompactRupiah(bank.depositBalance)}</div></td>
@@ -1616,7 +1617,7 @@ export default function DepositDesk() {
             {activeView === "dashboard" ? <Button variant="outline" size="sm" onClick={() => setNewFormOpen(true)}><Plus className="size-3.5" aria-hidden="true" />New form</Button> : null}
             {activeView === "cashflow" ? <><Button variant="outline" size="sm" onClick={syncErp}><RefreshCw className="size-3.5" aria-hidden="true" />Sync ERP</Button><Button size="sm" onClick={() => setNewFormOpen(true)}><Plus className="size-3.5" aria-hidden="true" />New form</Button></> : null}
             {activeView === "allocation" ? <Button variant="outline" size="sm" onClick={recalculateProposal}><RefreshCw className="size-3.5" aria-hidden="true" />Recalculate</Button> : null}
-            {activeView === "ranking" ? <Button variant="outline" size="sm" onClick={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: bank.active })))}><Download className="size-3.5" aria-hidden="true" />Export</Button> : null}
+            {activeView === "ranking" ? <Button variant="outline" size="sm" onClick={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: String(bank.active) })))}><Download className="size-3.5" aria-hidden="true" />Export</Button> : null}
             {activeView === "instructions" ? <Button size="sm" onClick={createInstructions} disabled={workspace.allocationState !== "Voucher created"}><Plus className="size-3.5" aria-hidden="true" />Create instruction</Button> : null}
             {activeView === "reports" ? <Button variant="outline" size="sm" onClick={printPage}><Download className="size-3.5" aria-hidden="true" />Print / PDF</Button> : null}
           </PageHeading>
@@ -1624,7 +1625,7 @@ export default function DepositDesk() {
           {activeView === "dashboard" ? <DashboardView workspace={workspace} onNavigate={setActiveView} onRunProposal={recalculateProposal} onApprove={approveDocument} /> : null}
           {activeView === "cashflow" ? <CashflowView workspace={workspace} onValidate={validateCashflow} onReturn={requestRevision} onCalculate={calculateBalance} onExport={exportCashflows} /> : null}
           {activeView === "allocation" ? <AllocationView workspace={workspace} onRecalculate={recalculateProposal} onSubmit={submitProposal} onEdit={setEditingAllocation} onCreateVoucher={createVouchers} /> : null}
-          {activeView === "ranking" ? <BankRankingView banks={workspace.banks} onEdit={setEditingBank} onExport={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: bank.active })))} /> : null}
+          {activeView === "ranking" ? <BankRankingView banks={workspace.banks} onEdit={setEditingBank} onExport={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: String(bank.active) })))} /> : null}
           {activeView === "approvals" ? <ApprovalsView approvals={workspace.approvals} onApprove={approveDocument} onReject={setReturningApproval} /> : null}
           {activeView === "instructions" ? <InstructionsView instructions={workspace.instructions} canCreate={workspace.allocationState === "Voucher created"} onCreate={createInstructions} onSubmit={submitInstruction} onMarkSent={markInstructionSent} onPrint={() => printPage()} /> : null}
           {activeView === "reports" ? <ReportsView workspace={workspace} onPrint={printPage} onExport={(kind) => kind === "cashflow" ? exportCashflows() : kind === "allocation" ? exportAllocation() : exportCsv("deposit-position.csv", workspace.banks.map((bank) => ({ Bank: bank.name, DepositBalanceIDR: bank.depositBalance, SharePercent: ((bank.depositBalance / Math.max(1, workspace.parameters.existingDeposits)) * 100).toFixed(1), Rate: bank.depositRate, Rank: bank.rank })))} /> : null}
