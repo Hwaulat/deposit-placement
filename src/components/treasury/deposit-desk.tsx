@@ -113,7 +113,7 @@ type WorkspaceView =
 
 type Theme = "light" | "dark";
 
-const STORAGE_KEY = "deposit-desk-workspace-v1";
+const STORAGE_KEY = "deposit-desk-workspace-v2";
 const THEME_KEY = "deposit-desk-theme";
 
 const NAV_GROUPS: { label: string; items: { id: WorkspaceView; label: string; icon: LucideIcon }[] }[] = [
@@ -2084,6 +2084,135 @@ function InstructionsView({
     return filtered.slice(start, start + pageSize);
   }, [filtered, currentPage, pageSize]);
 
+  const downloadInstructionPdf = (item: BankInstruction) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Pop-up diblokir oleh browser. Izinkan pop-up untuk mengunduh dokumen PDF.");
+      return;
+    }
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Surat Instruksi Penempatan Deposito - ${item.id}</title>
+          <style>
+            @page { size: A4; margin: 20mm; }
+            body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.6; margin: 0; padding: 24px; }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0a386c; padding-bottom: 12px; margin-bottom: 24px; }
+            .company { font-size: 18px; font-weight: bold; color: #0a386c; text-transform: uppercase; letter-spacing: 0.5px; }
+            .dept { font-size: 13px; font-weight: 600; color: #475569; }
+            .address { font-size: 11px; color: #64748b; margin-top: 2px; }
+            .doc-meta { text-align: right; font-size: 11px; }
+            .doc-id { font-family: monospace; font-weight: bold; font-size: 14px; color: #0f172a; }
+            .subject-box { background: #f8fafc; border-left: 4px solid #1F5AA6; padding: 10px 14px; margin: 20px 0; font-weight: bold; font-size: 13px; color: #0f172a; }
+            .table-spec { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 12px; }
+            .table-spec td { padding: 10px 14px; border: 1px solid #cbd5e1; }
+            .table-spec td.label { width: 35%; background: #f1f5f9; font-weight: 600; color: #334155; }
+            .table-spec td.value { font-weight: 500; color: #0f172a; }
+            .signatures { display: flex; justify-content: space-between; margin-top: 50px; text-align: center; }
+            .sign-col { width: 220px; }
+            .sign-space { height: 80px; }
+            .sign-name { font-weight: bold; text-decoration: underline; font-size: 13px; }
+            .sign-title { font-size: 11px; color: #64748b; margin-top: 2px; }
+            @media print {
+              body { padding: 0; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <div class="company">PT KORPORA MAJU BERSAMA</div>
+              <div class="dept">Treasury & Cash Management Division</div>
+              <div class="address">Gedung Bursa Efek Indonesia, Tower 2, Lantai 18, Jakarta Selatan</div>
+            </div>
+            <div class="doc-meta">
+              <div class="doc-id">${item.id}</div>
+              <div>Ref Voucher: <strong>${item.voucherNumber}</strong></div>
+              <div>Tanggal Terbit: ${formatDate(item.createdAt)}</div>
+              <div style="margin-top: 4px;"><span style="background: #e2e8f0; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 10px;">${item.status}</span></div>
+            </div>
+          </div>
+
+          <p style="font-size: 12px; margin-bottom: 4px;">Kepada Yth.</p>
+          <p style="font-size: 13px; font-weight: bold; margin: 0 0 2px 0;">Pimpinan Operasional / Divisi Korporasi</p>
+          <p style="font-size: 13px; font-weight: 600; margin: 0 0 2px 0; color: #1F5AA6;">${item.bankName}</p>
+          <p style="font-size: 12px; color: #64748b; margin: 0;">Kantor Cabang Utama</p>
+
+          <div class="subject-box">
+            Perihal: Surat Instruksi Penempatan Deposito Berjangka (Time Deposit)
+          </div>
+
+          <p style="font-size: 12px; color: #334155; line-height: 1.6;">
+            Dengan hormat, sehubungan dengan optimalisasi kas dan penempatan dana likuiditas perusahaan, bersama surat ini kami instruksikan untuk menempatkan Deposito Berjangka atas nama <strong>PT Korpora Maju Bersama</strong> dengan rincian data sebagai berikut:
+          </p>
+
+          <table class="table-spec">
+            <tr>
+              <td class="label">Bank Penerima</td>
+              <td class="value"><strong>${item.bankName}</strong></td>
+            </tr>
+            <tr>
+              <td class="label">Nominal Pokok Penempatan</td>
+              <td class="value" style="font-size: 14px; font-weight: bold; font-family: monospace; color: #0a386c;">${formatRupiah(item.amount)}</td>
+            </tr>
+            <tr>
+              <td class="label">Tanggal Efektif Penempatan</td>
+              <td class="value">${formatDate(item.createdAt)}</td>
+            </tr>
+            <tr>
+              <td class="label">Tanggal Jatuh Tempo</td>
+              <td class="value">${formatDate(item.maturityDate)}</td>
+            </tr>
+            <tr>
+              <td class="label">Jangka Waktu (Tenor)</td>
+              <td class="value">90 Hari Kerja (Business Days)</td>
+            </tr>
+            <tr>
+              <td class="label">Rekening Sumber Debet</td>
+              <td class="value" style="font-family: monospace;">102-00-982144-0 (Giro Operasional IDR)</td>
+            </tr>
+            <tr>
+              <td class="label">Instruksi Jatuh Tempo</td>
+              <td class="value">Non-ARO (Pokok dan Bunga dikreditkan kembali ke Rekening Sumber)</td>
+            </tr>
+            <tr>
+              <td class="label">Format Template Berkas</td>
+              <td class="value" style="font-family: monospace; font-size: 11px;">${item.template}</td>
+            </tr>
+          </table>
+
+          <p style="font-size: 11px; color: #64748b; line-height: 1.5;">
+            Mohon bilyet deposito atau konfirmasi penempatan elektronik diterbitkan dan dikirimkan kepada Departemen Treasury melalui email resmi perbendaharaan perusahaan. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.
+          </p>
+
+          <div class="signatures">
+            <div class="sign-col">
+              <div class="sign-title">Disiapkan Oleh,</div>
+              <div class="sign-space"></div>
+              <div class="sign-name">Agus Setiawan</div>
+              <div class="sign-title">Treasury Dept. Head</div>
+            </div>
+            <div class="sign-col">
+              <div class="sign-title">Disetujui Oleh,</div>
+              <div class="sign-space"></div>
+              <div class="sign-name">Bambang Hartono</div>
+              <div class="sign-title">Finance Accounting Director</div>
+            </div>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    toast.success(`Membuka dokumen PDF ${item.id} untuk dicetak / diunduh.`);
+  };
+
   return (
     <div className="space-y-4">
       <StatCardGrid
@@ -2167,7 +2296,7 @@ function InstructionsView({
           <table className="table-reference">
             <thead>
               <tr>
-                <th className="w-24 text-center">ACTION</th>
+                <th className="w-28 text-center">ACTION</th>
                 <th className="w-12 text-center">NO.</th>
                 <th>
                   <div className="flex items-center gap-1">
@@ -2196,6 +2325,15 @@ function InstructionsView({
                         aria-label="Print / View Letter"
                       >
                         <Eye className="size-4" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="iconDownload"
+                        onClick={() => downloadInstructionPdf(item)}
+                        title="Download Dokumen PDF"
+                        aria-label="Download Dokumen PDF"
+                      >
+                        <Download className="size-4 text-rose-500" />
                       </Button>
                       {item.status !== "Sent to bank" ? (
                         <Button
@@ -3503,7 +3641,12 @@ export default function DepositDesk() {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed: unknown = JSON.parse(saved);
-        if (isWorkspaceData(parsed)) setWorkspace(parsed);
+        if (isWorkspaceData(parsed)) {
+          if (parsed.instructions.length < 10) {
+            parsed.instructions = DEMO_WORKSPACE.instructions;
+          }
+          setWorkspace(parsed);
+        }
       }
     } catch {
       window.localStorage.removeItem(STORAGE_KEY);

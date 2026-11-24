@@ -79,6 +79,8 @@ const buttonVariants = cva(
         icon: "p-2 rounded-lg border border-gray-300 hover:bg-gray-100 hover:border-gray-300 text-gray-400 data-[state=open]:bg-gray-100 data-[state=open]:border-gray-300 dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-600 dark:text-gray-400 dark:data-[state=open]:bg-gray-700 dark:data-[state=open]:border-gray-600",
         iconView:
           "w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 hover:border-[#1F5AA6] hover:bg-[#EFF4FB] dark:hover:bg-[#1F5AA6]/20 text-gray-400 hover:text-[#1F5AA6] transition-all",
+        iconDownload:
+          "w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 hover:border-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-gray-400 hover:text-rose-600 transition-all",
         iconDelete:
           "w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 dark:border-gray-600 hover:border-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 text-gray-400 hover:text-red-600 transition-all",
         iconEdit:
