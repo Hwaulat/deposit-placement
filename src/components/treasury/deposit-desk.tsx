@@ -522,6 +522,8 @@ function Sidebar({
   collapsed: boolean;
   onClose: () => void;
 }) {
+  const isMini = collapsed && !open;
+
   return (
     <>
       {open ? (
@@ -535,45 +537,101 @@ function Sidebar({
       ) : null}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-[248px] flex-col border-r border-[#132238] bg-[#071327] text-white transition-all duration-300 ease-in-out",
-          open ? "translate-x-0" : "-translate-x-full",
-          collapsed ? "lg:-translate-x-full" : "lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex flex-col border-r border-[#132238] bg-[#071327] text-white transition-all duration-300 ease-in-out",
+          open ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          isMini ? "w-[248px] lg:w-[70px]" : "w-[248px]",
         )}
         aria-label="Main navigation"
       >
         {/* Brand Header */}
-        <div className="flex h-[72px] items-center gap-3 border-b border-[#132238] px-5">
-          <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-blue-700 via-sky-500 to-cyan-300 shadow-[0_0_12px_rgba(56,189,248,0.5)]">
-            <div className="size-3.5 rounded-full bg-white/90 shadow-inner" />
+        {isMini ? (
+          <div className="flex h-[72px] items-center justify-center border-b border-[#132238] px-2">
+            <button
+              type="button"
+              onClick={() => {
+                onNavigate("dashboard");
+                onClose();
+              }}
+              className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-blue-700 via-sky-500 to-cyan-300 shadow-[0_0_12px_rgba(56,189,248,0.5)] transition-transform hover:scale-105"
+              title="DEPOSIT DESK · Dashboard"
+              aria-label="Deposit Desk Dashboard"
+            >
+              <div className="size-3.5 rounded-full bg-white/90 shadow-inner" />
+            </button>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold tracking-wider text-white">DEPOSIT DESK</p>
-            <p className="truncate text-[10px] font-medium text-slate-400">Treasury Management System</p>
+        ) : (
+          <div className="flex h-[72px] items-center gap-3 border-b border-[#132238] px-5">
+            <button
+              type="button"
+              onClick={() => {
+                onNavigate("dashboard");
+                onClose();
+              }}
+              className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-blue-700 via-sky-500 to-cyan-300 shadow-[0_0_12px_rgba(56,189,248,0.5)] transition-transform hover:scale-105"
+              title="DEPOSIT DESK · Dashboard"
+              aria-label="Deposit Desk Dashboard"
+            >
+              <div className="size-3.5 rounded-full bg-white/90 shadow-inner" />
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-bold tracking-wider text-white">DEPOSIT DESK</p>
+              <p className="truncate text-[10px] font-medium text-slate-400">Treasury Management System</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 text-slate-400 hover:text-white lg:hidden"
+              aria-label="Close navigation"
+              onClick={onClose}
+            >
+              <X />
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 text-slate-400 hover:text-white lg:hidden"
-            aria-label="Close navigation"
-            onClick={onClose}
-          >
-            <X />
-          </Button>
-        </div>
+        )}
 
         {/* Navigation Groups */}
-        <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4">
-          {NAV_GROUPS.map((group) => (
+        <nav className={cn("min-h-0 flex-1 space-y-4 overflow-y-auto py-4 transition-all", isMini ? "px-2" : "px-3")}>
+          {NAV_GROUPS.map((group, groupIdx) => (
             <div key={group.label} className="space-y-1">
-              <div className="mb-2 flex items-center gap-2.5 px-3 pt-2">
-                <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#385d8a]">
-                  {group.label}
-                </span>
-                <div className="h-px flex-1 bg-[#1a2d46]" />
-              </div>
-              <div className="space-y-0.5">
+              {isMini ? (
+                groupIdx > 0 ? <div className="my-2.5 mx-auto h-px w-8 bg-[#1a2d46]" /> : null
+              ) : (
+                <div className="mb-2 flex items-center gap-2.5 px-3 pt-2">
+                  <span className="shrink-0 text-[10px] font-bold uppercase tracking-wider text-[#385d8a]">
+                    {group.label}
+                  </span>
+                  <div className="h-px flex-1 bg-[#1a2d46]" />
+                </div>
+              )}
+              <div className="space-y-1">
                 {group.items.map(({ id, label, icon: Icon }) => {
                   const selected = activeView === id;
+                  if (isMini) {
+                    return (
+                      <button
+                        key={id}
+                        type="button"
+                        title={label}
+                        aria-label={label}
+                        aria-current={selected ? "page" : undefined}
+                        className={cn(
+                          "group relative flex size-10 items-center justify-center rounded-lg transition-all mx-auto",
+                          selected
+                            ? "bg-[#13325e] text-blue-400 font-semibold shadow-xs"
+                            : "text-slate-400 hover:bg-[#0f2442] hover:text-slate-100",
+                        )}
+                        onClick={() => {
+                          onNavigate(id);
+                          onClose();
+                        }}
+                      >
+                        <Icon className={cn("size-4.5 shrink-0 transition-transform group-hover:scale-110", selected ? "text-blue-400" : "text-slate-400")} aria-hidden="true" />
+                        {selected && (
+                          <span className="absolute -left-2 top-2 bottom-2 w-1 rounded-r-full bg-blue-500 shadow-[0_0_6px_#3b82f6]" />
+                        )}
+                      </button>
+                    );
+                  }
                   return (
                     <Button
                       key={id}
@@ -590,7 +648,7 @@ function Sidebar({
                         onClose();
                       }}
                     >
-                      <Icon className={cn("size-4", selected ? "text-blue-400" : "text-slate-400")} aria-hidden="true" />
+                      <Icon className={cn("size-4 shrink-0", selected ? "text-blue-400" : "text-slate-400")} aria-hidden="true" />
                       <span className="truncate">{label}</span>
                     </Button>
                   );
@@ -601,13 +659,19 @@ function Sidebar({
         </nav>
 
         {/* System Online Status Footer */}
-        <div className="flex items-center justify-between border-t border-[#132238] px-5 py-3.5 text-[11px]">
-          <div className="flex items-center gap-2 font-medium text-emerald-400">
-            <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10B981]" />
-            <span>System Online</span>
+        {isMini ? (
+          <div className="flex items-center justify-center border-t border-[#132238] py-4" title="System Online · v2.5.0">
+            <span className="size-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981]" />
           </div>
-          <span className="font-mono text-slate-400">v2.5.0</span>
-        </div>
+        ) : (
+          <div className="flex items-center justify-between border-t border-[#132238] px-5 py-3.5 text-[11px]">
+            <div className="flex items-center gap-2 font-medium text-emerald-400">
+              <span className="size-2 rounded-full bg-emerald-500 shadow-[0_0_6px_#10B981]" />
+              <span>System Online</span>
+            </div>
+            <span className="font-mono text-slate-400">v2.5.0</span>
+          </div>
+        )}
       </aside>
     </>
   );
@@ -661,8 +725,8 @@ function TopBar({
           variant="ghost"
           size="icon"
           className="size-8 text-muted-foreground hover:text-foreground"
-          aria-label={isSidebarCollapsed ? "Open sidebar" : "Collapse sidebar"}
-          title={isSidebarCollapsed ? "Open sidebar" : "Collapse sidebar"}
+          aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           onClick={onToggleSidebar}
         >
           <PanelLeft className={cn("size-4 transition-transform duration-200", isSidebarCollapsed && "rotate-180 text-primary")} />
@@ -3488,7 +3552,7 @@ export default function DepositDesk() {
         collapsed={sidebarCollapsed}
         onClose={() => setMobileNavOpen(false)}
       />
-      <div className={cn("min-h-svh transition-all duration-300 ease-in-out", sidebarCollapsed ? "lg:pl-0" : "lg:pl-[248px]")}>
+      <div className={cn("min-h-svh transition-all duration-300 ease-in-out", sidebarCollapsed ? "lg:pl-[70px]" : "lg:pl-[248px]")}>
         <TopBar
           onOpenSearch={() => setSearchOpen(true)}
           theme={theme}
