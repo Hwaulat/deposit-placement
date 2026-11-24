@@ -3321,17 +3321,10 @@ export default function DepositDesk() {
                 activeView === "reports" ? () => exportCsv("deposit-position.csv", workspace.banks.map((b) => ({ Bank: b.name, Balance: b.depositBalance }))) :
                   undefined
             }
-            onCreateNew={
-              activeView === "cashflow" ? () => setNewFormOpen(true) :
-                activeView === "instructions" ? createInstructions :
-                  undefined
-            }
+            onCreateNew={activeView === "cashflow" ? () => setNewFormOpen(true) : undefined}
             downloadLabel="Download Excel"
             uploadLabel="Upload Excel"
-            createLabel={
-              activeView === "instructions" ? "Create Instruction" :
-                "+ Create New"
-            }
+            createLabel="+ Create New"
           >
             {activeView === "cashflow" ? (
               <Button variant="outline" size="sm" onClick={syncErp} className="h-9">
