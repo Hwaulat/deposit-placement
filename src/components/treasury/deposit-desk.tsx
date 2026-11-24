@@ -1459,7 +1459,6 @@ function AllocationView({
                 <thead>
                   <tr>
                     <th className="w-20 text-center">ACTION</th>
-                    <th className="w-10 text-center">NO.</th>
                     <th>
                       <div className="flex items-center gap-1">
                         <span>BANK NAME</span>
@@ -1474,7 +1473,7 @@ function AllocationView({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLines.map((line, idx) => (
+                  {filteredLines.map((line) => (
                     <tr key={line.id}>
                       <td className="text-center">
                         <div className="inline-flex items-center gap-1.5">
@@ -1490,7 +1489,6 @@ function AllocationView({
                           </Button>
                         </div>
                       </td>
-                      <td className="text-center font-mono text-muted-foreground">{idx + 1}</td>
                       <td>
                         <div className="flex items-center gap-2">
                           <span className="rank-mark">{line.rank}</span>
