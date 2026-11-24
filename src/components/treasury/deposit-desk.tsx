@@ -9,6 +9,7 @@ import {
   BadgeCheck,
   Bell,
   Building2,
+  Calculator,
   Calendar,
   CalendarDays,
   Check,
@@ -1011,6 +1012,19 @@ function DashboardView({
   );
 }
 
+const CASHFLOW_WEEKS = [
+  { id: "W48-2026", label: "Week 48 (23 Nov - 29 Nov 2026)", startDate: "2026-11-23", endDate: "2026-11-29" },
+  { id: "W49-2026", label: "Week 49 (30 Nov - 06 Dec 2026)", startDate: "2026-11-30", endDate: "2026-12-06" },
+  { id: "W50-2026", label: "Week 50 (07 Dec - 13 Dec 2026)", startDate: "2026-12-07", endDate: "2026-12-13" },
+  { id: "W51-2026", label: "Week 51 (14 Dec - 20 Dec 2026)", startDate: "2026-12-14", endDate: "2026-12-20" },
+];
+
+const CASHFLOW_MONTHS = [
+  { id: "2026-11", label: "November 2026" },
+  { id: "2026-12", label: "December 2026" },
+  { id: "2027-01", label: "January 2027" },
+];
+
 function CashflowView({
   workspace,
   onValidate,
@@ -1022,7 +1036,7 @@ function CashflowView({
   workspace: WorkspaceData;
   onValidate: (id: string) => void;
   onReturn: (id: string) => void;
-  onCalculate: () => void;
+  onCalculate: (mode?: string, label?: string, net?: number) => void;
   onExport: () => void;
   onNewForm: () => void;
 }) {
@@ -1032,8 +1046,68 @@ function CashflowView({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Period modes: daily, weekly, monthly, all
+  const [periodMode, setPeriodMode] = useState<"daily" | "weekly" | "monthly" | "all">("weekly");
+  const [selectedDailyDate, setSelectedDailyDate] = useState("2026-11-25");
+  const [selectedWeek, setSelectedWeek] = useState("W48-2026");
+  const [selectedMonth, setSelectedMonth] = useState("2026-11");
+  const [filterTableByPeriod, setFilterTableByPeriod] = useState(false);
+
+  const availableDailyDates = useMemo(() => {
+    const dates = Array.from(new Set(workspace.cashflows.map((item) => item.dueDate))).sort();
+    return dates;
+  }, [workspace.cashflows]);
+
+  const periodLabel = useMemo(() => {
+    if (periodMode === "daily") {
+      return formatDate(selectedDailyDate);
+    }
+    if (periodMode === "weekly") {
+      return CASHFLOW_WEEKS.find((w) => w.id === selectedWeek)?.label ?? selectedWeek;
+    }
+    if (periodMode === "monthly") {
+      return CASHFLOW_MONTHS.find((m) => m.id === selectedMonth)?.label ?? selectedMonth;
+    }
+    return "All Periods";
+  }, [periodMode, selectedDailyDate, selectedWeek, selectedMonth]);
+
+  const activeDateRangeText = useMemo(() => {
+    if (periodMode === "daily") {
+      return selectedDailyDate ? formatDate(selectedDailyDate) : "Daily";
+    }
+    if (periodMode === "weekly") {
+      const week = CASHFLOW_WEEKS.find((w) => w.id === selectedWeek);
+      return week ? `${formatDate(week.startDate)} - ${formatDate(week.endDate)}` : "Weekly";
+    }
+    if (periodMode === "monthly") {
+      const month = CASHFLOW_MONTHS.find((m) => m.id === selectedMonth);
+      return month ? month.label : "Monthly";
+    }
+    return "24/11/2026 - 31/12/2026";
+  }, [periodMode, selectedDailyDate, selectedWeek, selectedMonth]);
+
+  const periodFilteredCashflows = useMemo(() => {
+    if (periodMode === "daily") {
+      return workspace.cashflows.filter((item) => item.dueDate === selectedDailyDate);
+    }
+    if (periodMode === "weekly") {
+      const week = CASHFLOW_WEEKS.find((w) => w.id === selectedWeek);
+      if (!week) return workspace.cashflows;
+      return workspace.cashflows.filter((item) => item.dueDate >= week.startDate && item.dueDate <= week.endDate);
+    }
+    if (periodMode === "monthly") {
+      return workspace.cashflows.filter((item) => item.dueDate.startsWith(selectedMonth));
+    }
+    return workspace.cashflows;
+  }, [workspace.cashflows, periodMode, selectedDailyDate, selectedWeek, selectedMonth]);
+
+  const incoming = periodFilteredCashflows.filter((item) => item.direction === "Incoming").reduce((sum, item) => sum + item.amount, 0);
+  const outgoing = periodFilteredCashflows.filter((item) => item.direction === "Outgoing").reduce((sum, item) => sum + item.amount, 0);
+  const net = incoming - outgoing;
+
   const filteredItems = useMemo(() => {
-    return workspace.cashflows.filter((item) => {
+    const baseList = filterTableByPeriod ? periodFilteredCashflows : workspace.cashflows;
+    return baseList.filter((item) => {
       const matchSearch =
         item.reference.toLowerCase().includes(search.toLowerCase()) ||
         item.department.toLowerCase().includes(search.toLowerCase()) ||
@@ -1044,26 +1118,167 @@ function CashflowView({
       const matchStatus = statusFilter === "All" || item.status === statusFilter;
       return matchSearch && matchGroup && matchStatus;
     });
-  }, [workspace.cashflows, search, groupFilter, statusFilter]);
+  }, [workspace.cashflows, periodFilteredCashflows, filterTableByPeriod, search, groupFilter, statusFilter]);
 
   const pagedItems = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredItems.slice(start, start + pageSize);
   }, [filteredItems, currentPage, pageSize]);
 
-  const incoming = workspace.cashflows.filter((item) => item.direction === "Incoming").reduce((sum, item) => sum + item.amount, 0);
-  const outgoing = workspace.cashflows.filter((item) => item.direction === "Outgoing").reduce((sum, item) => sum + item.amount, 0);
-  const net = incoming - outgoing;
-
   return (
     <div className="space-y-4">
+      {/* Calculation & Period Mode Selector Banner */}
+      <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-2xs sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+            <CalendarDays className="size-4 text-primary" />
+            Calculate Mode:
+          </span>
+          <div className="inline-flex rounded-lg bg-muted p-1 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setPeriodMode("daily");
+                setCurrentPage(1);
+              }}
+              className={cn(
+                "rounded-md px-3 py-1 font-medium transition-colors",
+                periodMode === "daily"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Daily (Per Hari)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPeriodMode("weekly");
+                setCurrentPage(1);
+              }}
+              className={cn(
+                "rounded-md px-3 py-1 font-medium transition-colors",
+                periodMode === "weekly"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Weekly (Mingguan)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPeriodMode("monthly");
+                setCurrentPage(1);
+              }}
+              className={cn(
+                "rounded-md px-3 py-1 font-medium transition-colors",
+                periodMode === "monthly"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Monthly (Bulanan)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPeriodMode("all");
+                setCurrentPage(1);
+              }}
+              className={cn(
+                "rounded-md px-3 py-1 font-medium transition-colors",
+                periodMode === "all"
+                  ? "bg-background text-foreground shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              All Periods
+            </button>
+          </div>
+        </div>
+
+        {/* Dynamic Period Target Picker & Calculate Button */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {periodMode === "daily" ? (
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground">Select Day:</span>
+              <select
+                value={selectedDailyDate}
+                onChange={(e) => {
+                  setSelectedDailyDate(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none focus:border-primary"
+              >
+                {availableDailyDates.map((d) => (
+                  <option key={d} value={d}>
+                    {formatDate(d)} ({d})
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
+          {periodMode === "weekly" ? (
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground">Select Week:</span>
+              <select
+                value={selectedWeek}
+                onChange={(e) => {
+                  setSelectedWeek(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none focus:border-primary"
+              >
+                {CASHFLOW_WEEKS.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
+          {periodMode === "monthly" ? (
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="text-muted-foreground">Select Month:</span>
+              <select
+                value={selectedMonth}
+                onChange={(e) => {
+                  setSelectedMonth(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none focus:border-primary"
+              >
+                {CASHFLOW_MONTHS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onCalculate(periodMode, periodLabel, net)}
+            className="btn-blue h-8"
+          >
+            <Calculator className="size-3.5" />
+            <span>Calculate Cash Flow</span>
+          </Button>
+        </div>
+      </div>
+
       <StatCardGrid
         columns={4}
         items={[
           {
             title: "Total Incoming",
             value: formatCompactRupiah(incoming),
-            subtitle: "ERP and department forms",
+            subtitle: `${periodMode === "daily" ? "Daily" : periodMode === "weekly" ? "Weekly" : periodMode === "monthly" ? "Monthly" : "Total"} incoming · ${periodLabel}`,
             icon: <TrendingUp className="size-5 text-emerald-600" />,
             iconBg: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400",
             valueColor: "text-emerald-600 dark:text-emerald-400",
@@ -1071,7 +1286,7 @@ function CashflowView({
           {
             title: "Total Expenditure",
             value: formatCompactRupiah(outgoing),
-            subtitle: "Submitted and validated",
+            subtitle: `${periodMode === "daily" ? "Daily" : periodMode === "weekly" ? "Weekly" : periodMode === "monthly" ? "Monthly" : "Total"} expenditure · ${periodLabel}`,
             icon: <TrendingDown className="size-5 text-rose-600" />,
             iconBg: "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400",
             valueColor: "text-rose-600 dark:text-rose-400",
@@ -1079,7 +1294,7 @@ function CashflowView({
           {
             title: "Net Cash Flow",
             value: formatCompactRupiah(net),
-            subtitle: "Incoming minus expenditure",
+            subtitle: `${periodMode === "daily" ? "Daily" : periodMode === "weekly" ? "Weekly" : periodMode === "monthly" ? "Monthly" : "Total"} net · ${periodLabel}`,
             icon: <Activity className="size-5 text-[#1F5AA6]" />,
             iconBg: "bg-blue-50 text-[#1F5AA6] dark:bg-blue-900/30 dark:text-blue-400",
             valueColor: net >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400",
@@ -1112,6 +1327,19 @@ function CashflowView({
           </div>
 
           <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
+            <label className="flex items-center gap-1.5 cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+              <input
+                type="checkbox"
+                checked={filterTableByPeriod}
+                onChange={(e) => {
+                  setFilterTableByPeriod(e.target.checked);
+                  setCurrentPage(1);
+                }}
+                className="rounded border-border size-3.5"
+              />
+              <span>Filter by period</span>
+            </label>
+
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <span>Group :</span>
               <select
@@ -1148,7 +1376,7 @@ function CashflowView({
 
             <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
               <Calendar className="size-3.5" />
-              <span>24/11/2026 - 31/12/2026</span>
+              <span>{activeDateRangeText}</span>
             </div>
           </div>
         </div>
@@ -3237,10 +3465,18 @@ export default function DepositDesk() {
     toast.success("Form returned for revision.");
   };
 
-  const calculateBalance = () => {
-    const net = workspace.cashflows.filter((item) => item.status === "Validated").reduce((sum, item) => sum + (item.direction === "Incoming" ? item.amount : -item.amount), 0);
-    setWorkspace((current) => withAudit({ ...current, cashBalance: Math.max(0, current.cashBalance + net) }, "Cash balance calculated", `Validated net movement · ${formatCompactRupiah(net)}`));
-    toast.success("Cash balance recalculated from validated items.");
+  const calculateBalance = (mode?: string, label?: string, periodNet?: number) => {
+    const netToUse = periodNet !== undefined ? periodNet : workspace.cashflows.filter((item) => item.status === "Validated").reduce((sum, item) => sum + (item.direction === "Incoming" ? item.amount : -item.amount), 0);
+    const modeLabel = label || "All periods";
+    setWorkspace((current) => withAudit({
+      ...current,
+      cashBalance: Math.max(0, current.cashBalance + netToUse),
+      parameters: {
+        ...current.parameters,
+        availableCash: Math.max(0, current.parameters.availableCash + netToUse),
+      }
+    }, `Cash flow calculated (${mode || "period"})`, `Calculated ${modeLabel} · Net movement: ${formatCompactRupiah(netToUse)}`));
+    toast.success(`Cash flow calculated for ${modeLabel}! Net: ${formatCompactRupiah(netToUse)}`);
   };
 
   const addCashflow = (item: { reference: string; department: string; category: string; direction: "Incoming" | "Outgoing"; amount: number; dueDate: string }) => {
