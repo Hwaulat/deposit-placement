@@ -837,31 +837,13 @@ function DashboardView({
 }: {
   workspace: WorkspaceData;
   onNavigate: (view: WorkspaceView) => void;
-  onRunProposal: () => void;
+  onRunProposal?: () => void;
 }) {
   const totalDeposits = workspace.banks.reduce((sum, bank) => sum + bank.depositBalance, 0);
   const depositLimit = (workspace.parameters.equity * workspace.parameters.maxEquityPercent) / 100;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <CalendarDays className="size-3.5" aria-hidden="true" />
-          <span>Tuesday, 24 November 2026</span>
-          <span className="text-border">·</span>
-          <span>Cycle 48</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
-            <span className="size-2 rounded-full bg-emerald-500" />
-            Live Demo Data
-          </span>
-          <Button variant="outline" size="sm" onClick={() => onNavigate("cashflow")}>
-            View Cash Flow <ArrowRight className="size-3.5" aria-hidden="true" />
-          </Button>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <KpiCard
           label="Total cash balance"
@@ -1014,22 +996,6 @@ function DashboardView({
           </div>
         </Panel>
       </div>
-
-      <Panel>
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-start gap-3">
-            <div className="action-callout-icon"><Activity className="size-4" aria-hidden="true" /></div>
-            <div><h2 className="text-sm font-semibold text-foreground">November placement proposal</h2><p className="mt-1 text-xs text-muted-foreground">{workspace.proposal.status === "Ready" ? workspace.proposal.explanation : "Recalculate from current cash flow and bank ranking."}</p></div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={workspace.allocationState === "Voucher created" ? "Voucher created" : workspace.proposal.status} />
-            <Button onClick={() => workspace.proposal.status === "Ready" ? onNavigate("allocation") : onRunProposal()}>
-              {workspace.proposal.status === "Ready" ? "Review proposal" : "Calculate allocation"}
-              <ArrowRight className="size-4" aria-hidden="true" />
-            </Button>
-          </div>
-        </div>
-      </Panel>
     </div>
   );
 }
@@ -3356,11 +3322,10 @@ export default function DepositDesk() {
                     undefined
             }
             onCreateNew={
-              activeView === "dashboard" ? () => setNewFormOpen(true) :
-                activeView === "cashflow" ? () => setNewFormOpen(true) :
-                  activeView === "allocation" ? recalculateProposal :
-                    activeView === "instructions" ? createInstructions :
-                      undefined
+              activeView === "cashflow" ? () => setNewFormOpen(true) :
+                activeView === "allocation" ? recalculateProposal :
+                  activeView === "instructions" ? createInstructions :
+                    undefined
             }
             downloadLabel="Download Excel"
             uploadLabel="Upload Excel"
