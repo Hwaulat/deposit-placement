@@ -1029,10 +1029,11 @@ function CashflowView({
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <MiniMetric label="Total incoming" value={formatCompactRupiah(incoming)} detail="ERP and department forms" tone="positive" />
         <MiniMetric label="Total expenditure" value={formatCompactRupiah(outgoing)} detail="Submitted and validated" tone="warning" />
-        <MiniMetric label="Net cash flow" value={formatCompactRupiah(net)} detail="Current reporting period" tone={net >= 0 ? "positive" : "warning"} />
+        <MiniMetric label="Net cash flow" value={formatCompactRupiah(net)} detail="Incoming minus expenditure" tone={net >= 0 ? "positive" : "warning"} />
+        <MiniMetric label="Ending balance projection" value={formatCompactRupiah(workspace.cashBalance + net)} detail={`Starting cash ${formatCompactRupiah(workspace.cashBalance)}`} tone="positive" />
       </div>
 
       {/* Table & Filter Container Card Matching Reference Design */}
@@ -1230,12 +1231,14 @@ function AllocationView({
   onRecalculate,
   onSubmit,
   onEdit,
+  onAddPlacement,
   onCreateVoucher,
 }: {
   workspace: WorkspaceData;
   onRecalculate: () => void;
   onSubmit: () => void;
   onEdit: (line: AllocationLine) => void;
+  onAddPlacement?: () => void;
   onCreateVoucher: () => void;
 }) {
   const proposal = workspace.proposal;
@@ -1257,6 +1260,12 @@ function AllocationView({
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={onRecalculate}><RefreshCw className="size-3.5" aria-hidden="true" />Recalculate</Button>
+            {workspace.allocationState === "Draft" && onAddPlacement ? (
+              <Button variant="outline" size="sm" onClick={onAddPlacement}>
+                <Plus className="size-3.5" aria-hidden="true" />
+                Add placement
+              </Button>
+            ) : null}
             {canSubmit ? <Button size="sm" onClick={onSubmit} className="btn-blue"><Send className="size-3.5" aria-hidden="true" />Submit for approval</Button> : null}
             {canCreateVoucher ? <Button size="sm" onClick={onCreateVoucher} className="btn-blue"><FileCheck2 className="size-3.5" aria-hidden="true" />Create ERP vouchers</Button> : null}
           </div>
@@ -1270,7 +1279,17 @@ function AllocationView({
       </Panel>
 
       {proposal.status !== "Ready" ? (
-        <Panel><EmptyState title={proposal.status === "Not required" ? "No placement required" : "No compliant proposal"} description={proposal.explanation} /></Panel>
+        <Panel>
+          <EmptyState title={proposal.status === "Not required" ? "No placement required" : "No compliant proposal"} description={proposal.explanation} />
+          {workspace.allocationState === "Draft" && onAddPlacement ? (
+            <div className="mt-4 flex justify-center">
+              <Button size="sm" variant="outline" onClick={onAddPlacement}>
+                <Plus className="mr-1 size-3.5" />
+                Add placement manually
+              </Button>
+            </div>
+          ) : null}
+        </Panel>
       ) : (
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
           <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs xl:col-span-8">
@@ -2411,40 +2430,216 @@ function CashflowFormDialog({
 
 function AllocationEditDialog({
   line,
+  banks,
   open,
   onOpenChange,
   onSave,
 }: {
   line: AllocationLine | null;
+  banks: Bank[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (id: string, amount: number, tenorDays: number, reason: string) => void;
+  onSave: (
+    id: string,
+    bankId: string,
+    amount: number,
+    tenorDays: number,
+    maturityDate: string,
+    reason: string
+  ) => void;
 }) {
+  const [bankId, setBankId] = useState("");
   const [amount, setAmount] = useState("");
   const [tenor, setTenor] = useState("90");
+  const [maturityDate, setMaturityDate] = useState("");
+  const [overrideSchedule, setOverrideSchedule] = useState(false);
   const [reason, setReason] = useState("");
+
   useEffect(() => {
     if (line) {
+      setBankId(line.bankId);
       setAmount(String(line.amount));
       setTenor(String(line.tenorDays));
+      setMaturityDate(line.maturityDate);
+      setOverrideSchedule(false);
       setReason("");
     }
   }, [line]);
+
+  const handleTenorChange = (val: string) => {
+    setTenor(val);
+    const num = Number(val);
+    if (!overrideSchedule && Number.isInteger(num) && num > 0) {
+      setMaturityDate(addBusinessDays(new Date().toISOString().slice(0, 10), num));
+    }
+  };
+
+  const selectedBank = banks.find((b) => b.id === bankId) ?? banks.find((b) => b.name === line?.bankName);
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const nextAmount = Number(amount);
     const nextTenor = Number(tenor);
-    if (!line || !Number.isFinite(nextAmount) || nextAmount <= 0 || !Number.isInteger(nextTenor) || nextTenor < 1 || !reason.trim()) {
+    if (
+      !line ||
+      !Number.isFinite(nextAmount) ||
+      nextAmount <= 0 ||
+      !Number.isInteger(nextTenor) ||
+      nextTenor < 1 ||
+      !reason.trim()
+    ) {
       toast.error("Enter a valid amount, tenor and adjustment reason.");
       return;
     }
-    onSave(line.id, nextAmount, nextTenor, reason.trim());
+    const finalMaturity = maturityDate || addBusinessDays(new Date().toISOString().slice(0, 10), nextTenor);
+    onSave(line.id, bankId || line.bankId, nextAmount, nextTenor, finalMaturity, reason.trim());
   };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Adjust placement</DialogTitle><DialogDescription>{line ? `Update the suggested amount or tenor for ${line.bankName}.` : "Update the suggested placement."}</DialogDescription></DialogHeader>
-        {line ? <form onSubmit={submit} className="space-y-4"><label className="block"><span className="field-label">Placement amount · IDR</span><Input type="number" min="1" step="1000000" value={amount} onChange={(event) => setAmount(event.target.value)} /></label><label className="block"><span className="field-label">Tenor · business days</span><Input type="number" min="1" step="1" value={tenor} onChange={(event) => setTenor(event.target.value)} /></label><label className="block"><span className="field-label">Reason for adjustment</span><Input value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Required for audit trail" /></label><DialogFooter><Button type="submit" className="btn-blue"><Check className="size-4" aria-hidden="true" />Save adjustment</Button></DialogFooter></form> : null}
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Adjust TD Placement</DialogTitle>
+          <DialogDescription>
+            {line
+              ? `Adjust placement amount, tenor, bank allocation, and schedule for ${line.bankName}.`
+              : "Update suggested placement."}
+          </DialogDescription>
+        </DialogHeader>
+        {line ? (
+          <form onSubmit={submit} className="space-y-4">
+            {/* 1. Adjustment Bank Allocation */}
+            <label className="block">
+              <span className="field-label">Bank Allocation</span>
+              <select
+                value={bankId}
+                onChange={(e) => setBankId(e.target.value)}
+                className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
+              >
+                {banks
+                  .filter((b) => b.active)
+                  .map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name} — Rank #{b.rank} ({b.depositRate.toFixed(2)}% p.a. · Max {b.maxAllocationPercent}%)
+                    </option>
+                  ))}
+              </select>
+              {selectedBank ? (
+                <div className="mt-1 flex items-center justify-between text-[11px] text-muted-foreground">
+                  <span>Current rate: <strong className="text-foreground">{selectedBank.depositRate.toFixed(2)}%</strong></span>
+                  <span>Limit: <strong className="text-foreground">{selectedBank.maxAllocationPercent}%</strong></span>
+                  <span>Existing deposit: <strong className="text-foreground">{formatCompactRupiah(selectedBank.depositBalance)}</strong></span>
+                </div>
+              ) : null}
+            </label>
+
+            {/* 2. Adjustment TD Amount */}
+            <label className="block">
+              <span className="field-label">Placement Amount (IDR)</span>
+              <Input
+                type="number"
+                min="1"
+                step="1000000"
+                value={amount}
+                onChange={(event) => setAmount(event.target.value)}
+              />
+              <span className="mt-1 block font-mono text-[11px] text-muted-foreground">
+                {amount && Number(amount) > 0 ? formatRupiah(Number(amount)) : "Min. placement Rp 100,000,000"}
+              </span>
+            </label>
+
+            {/* 3. Adjustment TD Tenor */}
+            <div>
+              <span className="field-label">Tenor (Business Days)</span>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={tenor}
+                  onChange={(event) => handleTenorChange(event.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {[30, 60, 90, 180, 365].map((days) => (
+                  <button
+                    key={days}
+                    type="button"
+                    onClick={() => handleTenorChange(String(days))}
+                    className={cn(
+                      "rounded border px-2 py-0.5 text-[10px] font-medium transition-colors",
+                      tenor === String(days)
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    {days} Days
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Override Suggested Schedule */}
+            <div className="rounded-lg border border-border bg-muted/20 p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-foreground">Override Suggested Schedule</span>
+                <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={overrideSchedule}
+                    onChange={(e) => {
+                      setOverrideSchedule(e.target.checked);
+                      if (!e.target.checked && Number(tenor) > 0) {
+                        setMaturityDate(addBusinessDays(new Date().toISOString().slice(0, 10), Number(tenor)));
+                      }
+                    }}
+                    className="size-3.5 rounded border-border"
+                  />
+                  <span>Manual date</span>
+                </label>
+              </div>
+              <div className="mt-2">
+                <label className="block">
+                  <span className="mb-1 block text-[11px] text-muted-foreground">Maturity Date (Tanggal Jatuh Tempo)</span>
+                  <Input
+                    type="date"
+                    value={maturityDate}
+                    disabled={!overrideSchedule}
+                    onChange={(event) => setMaturityDate(event.target.value)}
+                    className={cn("text-xs font-mono", !overrideSchedule && "opacity-70 bg-muted/50 cursor-not-allowed")}
+                  />
+                </label>
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  {overrideSchedule
+                    ? "Schedule is manually overridden by user."
+                    : "Auto-calculated based on tenor in business days."}
+                </p>
+              </div>
+            </div>
+
+            {/* Audit Reason */}
+            <label className="block">
+              <span className="field-label">Reason for Adjustment</span>
+              <Input
+                value={reason}
+                onChange={(event) => setReason(event.target.value)}
+                placeholder="e.g. Rate negotiation with bank, cash flow timing override..."
+              />
+              <span className="mt-0.5 block text-[10px] text-muted-foreground">Required for governance & audit trail.</span>
+            </label>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" className="btn-blue" size="sm">
+                <Check className="size-3.5" aria-hidden="true" />
+                Save Adjustment
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -3031,18 +3226,99 @@ export default function DepositDesk() {
     toast.success(`${newItems.length} cash flow records successfully imported from Excel!`);
   };
 
-  const editAllocation = (id: string, amount: number, tenorDays: number, reason: string) => {
+  const handleAddPlacement = () => {
+    const activeBanks = workspace.banks.filter((b) => b.active);
+    const unusedBank = activeBanks.find(
+      (b) => !workspace.proposal.lines.some((l) => l.bankId === b.id)
+    ) ?? activeBanks[0];
+    if (!unusedBank) {
+      toast.error("No active banks available for placement.");
+      return;
+    }
+    const newLine: AllocationLine = {
+      id: `AL-${Date.now().toString().slice(-4)}`,
+      bankId: unusedBank.id,
+      bankName: unusedBank.name,
+      rank: unusedBank.rank,
+      amount: workspace.parameters.minimumPlacement,
+      annualRate: unusedBank.depositRate,
+      tenorDays: 90,
+      maturityDate: addBusinessDays(new Date().toISOString().slice(0, 10), 90),
+      reason: "Manual placement adjustment",
+      status: "Adjusted",
+    };
+    const lines = [...workspace.proposal.lines, newLine];
+    const totalAllocated = lines.reduce((sum, line) => sum + line.amount, 0);
+    setWorkspace((current) => ({
+      ...current,
+      proposal: {
+        ...current.proposal,
+        status: "Ready",
+        lines,
+        totalAllocated,
+        remainingCash: current.parameters.availableCash - totalAllocated,
+      },
+    }));
+    setEditingAllocation(newLine);
+  };
+
+  const editAllocation = (
+    id: string,
+    bankId: string,
+    amount: number,
+    tenorDays: number,
+    maturityDate: string,
+    reason: string
+  ) => {
     const original = workspace.proposal.lines.find((line) => line.id === id);
     if (!original) return;
-    const maturityDate = addBusinessDays(new Date().toISOString().slice(0, 10), tenorDays);
-    const lines = workspace.proposal.lines.map((line) => line.id === id ? { ...line, amount, tenorDays, maturityDate, status: "Adjusted" as const, reason: `Manual override · ${reason}` } : line);
+    const targetBank = workspace.banks.find((b) => b.id === bankId) ?? workspace.banks.find((b) => b.name === original.bankName);
+    const bankName = targetBank ? targetBank.name : original.bankName;
+    const annualRate = targetBank ? targetBank.depositRate : original.annualRate;
+    const rank = targetBank ? targetBank.rank : original.rank;
+
+    const finalMaturityDate = maturityDate || addBusinessDays(new Date().toISOString().slice(0, 10), tenorDays);
+
+    const lines = workspace.proposal.lines.map((line) =>
+      line.id === id
+        ? {
+            ...line,
+            bankId: targetBank ? targetBank.id : line.bankId,
+            bankName,
+            rank,
+            annualRate,
+            amount,
+            tenorDays,
+            maturityDate: finalMaturityDate,
+            status: "Adjusted" as const,
+            reason: `Manual override · ${reason}`,
+          }
+        : line
+    );
+
     const validation = validateAllocationLines(lines, workspace.parameters);
     if (!validation.valid) {
       toast.error(validation.message);
       return;
     }
+
     const totalAllocated = lines.reduce((sum, line) => sum + line.amount, 0);
-    setWorkspace((current) => withAudit({ ...current, proposal: { ...current.proposal, lines, totalAllocated, remainingCash: current.parameters.availableCash - totalAllocated }, allocationState: "Draft" }, "Allocation adjusted", `${original.bankName} · ${formatCompactRupiah(original.amount)} → ${formatCompactRupiah(amount)} · ${reason}`));
+    setWorkspace((current) =>
+      withAudit(
+        {
+          ...current,
+          proposal: {
+            ...current.proposal,
+            lines,
+            totalAllocated,
+            remainingCash: current.parameters.availableCash - totalAllocated,
+          },
+          allocationState: "Draft",
+        },
+        "Allocation adjusted",
+        `${original.bankName} → ${bankName} · ${formatCompactRupiah(original.amount)} → ${formatCompactRupiah(amount)} · ${tenorDays}d · ${finalMaturityDate} · ${reason}`
+      )
+    );
     setEditingAllocation(null);
     toast.success(validation.message);
   };
@@ -3208,7 +3484,7 @@ export default function DepositDesk() {
 
           {activeView === "dashboard" ? <DashboardView workspace={workspace} onNavigate={setActiveView} onRunProposal={recalculateProposal} onApprove={approveDocument} /> : null}
           {activeView === "cashflow" ? <CashflowView workspace={workspace} onValidate={validateCashflow} onReturn={requestRevision} onCalculate={calculateBalance} onExport={exportCashflows} onNewForm={() => setNewFormOpen(true)} /> : null}
-          {activeView === "allocation" ? <AllocationView workspace={workspace} onRecalculate={recalculateProposal} onSubmit={submitProposal} onEdit={setEditingAllocation} onCreateVoucher={createVouchers} /> : null}
+          {activeView === "allocation" ? <AllocationView workspace={workspace} onRecalculate={recalculateProposal} onSubmit={submitProposal} onEdit={setEditingAllocation} onAddPlacement={handleAddPlacement} onCreateVoucher={createVouchers} /> : null}
           {activeView === "ranking" ? <BankRankingView banks={workspace.banks} onEdit={setEditingBank} onExport={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: String(bank.active) })))} /> : null}
           {activeView === "approvals" ? <ApprovalsView approvals={workspace.approvals} onApprove={approveDocument} onReject={setReturningApproval} /> : null}
           {activeView === "instructions" ? <InstructionsView instructions={workspace.instructions} canCreate={workspace.allocationState === "Voucher created"} onCreate={createInstructions} onSubmit={submitInstruction} onMarkSent={markInstructionSent} onPrint={(item) => setPrintingInstruction(item)} /> : null}
@@ -3225,7 +3501,7 @@ export default function DepositDesk() {
 
       <SearchDialog open={searchOpen} onOpenChange={setSearchOpen} onNavigate={setActiveView} />
       <CashflowFormDialog open={newFormOpen} onOpenChange={setNewFormOpen} onSave={addCashflow} />
-      <AllocationEditDialog line={editingAllocation} open={editingAllocation !== null} onOpenChange={(open) => { if (!open) setEditingAllocation(null); }} onSave={editAllocation} />
+      <AllocationEditDialog line={editingAllocation} banks={workspace.banks} open={editingAllocation !== null} onOpenChange={(open) => { if (!open) setEditingAllocation(null); }} onSave={editAllocation} />
       <BankEditDialog bank={editingBank} open={editingBank !== null} onOpenChange={(open) => { if (!open) setEditingBank(null); }} onSave={saveBank} />
       <ReturnDialog item={returningApproval} open={returningApproval !== null} onOpenChange={(open) => { if (!open) setReturningApproval(null); }} onReturn={returnDocument} />
       <InstructionLetterDialog instruction={printingInstruction} open={printingInstruction !== null} onOpenChange={(open) => { if (!open) setPrintingInstruction(null); }} />
