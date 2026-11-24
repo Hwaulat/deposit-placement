@@ -3316,23 +3316,20 @@ export default function DepositDesk() {
             activeView={activeView}
             onUploadExcel={activeView === "cashflow" ? () => setUploadExcelOpen(true) : undefined}
             onDownloadExcel={
-              activeView === "allocation" ? exportAllocation :
-                activeView === "ranking" ? () => exportCsv("bank-ranking.csv", workspace.banks.map((b) => ({ Rank: b.rank, Bank: b.name, Rate: b.depositRate }))) :
-                  activeView === "reports" ? () => exportCsv("deposit-position.csv", workspace.banks.map((b) => ({ Bank: b.name, Balance: b.depositBalance }))) :
-                    undefined
+              activeView === "ranking" ? () => exportCsv("bank-ranking.csv", workspace.banks.map((b) => ({ Rank: b.rank, Bank: b.name, Rate: b.depositRate }))) :
+                activeView === "reports" ? () => exportCsv("deposit-position.csv", workspace.banks.map((b) => ({ Bank: b.name, Balance: b.depositBalance }))) :
+                  undefined
             }
             onCreateNew={
               activeView === "cashflow" ? () => setNewFormOpen(true) :
-                activeView === "allocation" ? recalculateProposal :
-                  activeView === "instructions" ? createInstructions :
-                    undefined
+                activeView === "instructions" ? createInstructions :
+                  undefined
             }
             downloadLabel="Download Excel"
             uploadLabel="Upload Excel"
             createLabel={
-              activeView === "allocation" ? "Recalculate" :
-                activeView === "instructions" ? "Create Instruction" :
-                  "+ Create New"
+              activeView === "instructions" ? "Create Instruction" :
+                "+ Create New"
             }
           >
             {activeView === "cashflow" ? (
