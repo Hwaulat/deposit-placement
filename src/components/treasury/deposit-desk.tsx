@@ -102,7 +102,6 @@ type WorkspaceView =
   | "cashflow"
   | "allocation"
   | "ranking"
-  | "approvals"
   | "instructions"
   | "reports"
   | "archive"
@@ -121,7 +120,6 @@ const NAV_GROUPS: { label: string; items: { id: WorkspaceView; label: string; ic
       { id: "cashflow", label: "Cash Flow", icon: ArrowLeftRight },
       { id: "allocation", label: "Deposit Allocation", icon: Wallet },
       { id: "ranking", label: "Bank Ranking", icon: Landmark },
-      { id: "approvals", label: "Workflow Approval", icon: BadgeCheck },
     ],
   },
   {
@@ -156,10 +154,6 @@ const PAGE_META: Record<WorkspaceView, { title: string; description: string }> =
   ranking: {
     title: "Bank Ranking",
     description: "Manage deposit rates, service ratings and allocation limits.",
-  },
-  approvals: {
-    title: "Workflow Approval",
-    description: "Move each report through the required approval sequence.",
   },
   instructions: {
     title: "Bank Instructions",
@@ -589,11 +583,6 @@ function Sidebar({
                     >
                       <Icon className={cn("size-4", selected ? "text-blue-400" : "text-slate-400")} aria-hidden="true" />
                       <span className="truncate">{label}</span>
-                      {id === "approvals" ? (
-                        <span className="ml-auto inline-flex size-5 items-center justify-center rounded-full bg-blue-600 text-[10px] font-bold text-white">
-                          2
-                        </span>
-                      ) : null}
                     </Button>
                   );
                 })}
@@ -780,14 +769,11 @@ function DashboardView({
   workspace,
   onNavigate,
   onRunProposal,
-  onApprove,
 }: {
   workspace: WorkspaceData;
   onNavigate: (view: WorkspaceView) => void;
   onRunProposal: () => void;
-  onApprove: (id: string) => void;
 }) {
-  const pendingApprovals = workspace.approvals.filter((item) => item.status === "Pending");
   const totalDeposits = workspace.banks.reduce((sum, bank) => sum + bank.depositBalance, 0);
   const depositLimit = (workspace.parameters.equity * workspace.parameters.maxEquityPercent) / 100;
 
@@ -920,30 +906,27 @@ function DashboardView({
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
         <Panel className="xl:col-span-7">
           <PanelHeading
-            title="Awaiting approval"
-            detail={`${pendingApprovals.length} documents in the approval sequence`}
-            action={<Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onNavigate("approvals")}>View queue <ArrowRight className="size-3.5" aria-hidden="true" /></Button>}
+            title="Active bank instructions"
+            detail={`${workspace.instructions.length} placement instructions generated`}
+            action={<Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => onNavigate("instructions")}>View all <ArrowRight className="size-3.5" aria-hidden="true" /></Button>}
           />
-          {pendingApprovals.length ? (
+          {workspace.instructions.length ? (
             <div className="divide-y divide-border">
-              {pendingApprovals.slice(0, 3).map((item) => {
-                const approver = APPROVAL_STEPS[item.step] ?? APPROVAL_STEPS[0];
-                return (
-                  <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
-                    <div className="min-w-0">
-                      <p className="truncate text-xs font-medium text-foreground">{item.document}</p>
-                      <p className="mt-1 text-[11px] text-muted-foreground">{approver} · step {item.step + 1} of 3</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-xs tabular-nums text-foreground">{formatCompactRupiah(item.amount)}</span>
-                      <Button variant="outline" size="sm" onClick={() => onApprove(item.id)}>Approve</Button>
-                    </div>
+              {workspace.instructions.slice(0, 3).map((item) => (
+                <div key={item.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold text-foreground">{item.bankName} — {item.id}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{item.voucherNumber} · Maturity {formatDate(item.maturityDate)}</p>
                   </div>
-                );
-              })}
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-xs font-medium tabular-nums text-foreground">{formatCompactRupiah(item.amount)}</span>
+                    <StatusBadge status={item.status} />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : (
-            <EmptyState title="Nothing waiting for approval" description="New submissions will appear here." />
+            <EmptyState title="No active bank instructions" description="Placement instructions will appear here." />
           )}
         </Panel>
 
@@ -974,7 +957,7 @@ function DashboardView({
             <div><h2 className="text-sm font-semibold text-foreground">November placement proposal</h2><p className="mt-1 text-xs text-muted-foreground">{workspace.proposal.status === "Ready" ? workspace.proposal.explanation : "Recalculate from current cash flow and bank ranking."}</p></div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={workspace.allocationState === "In review" ? "In approval" : workspace.proposal.status} />
+            <StatusBadge status={workspace.allocationState === "Voucher created" ? "Voucher created" : workspace.proposal.status} />
             <Button onClick={() => workspace.proposal.status === "Ready" ? onNavigate("allocation") : onRunProposal()}>
               {workspace.proposal.status === "Ready" ? "Review proposal" : "Calculate allocation"}
               <ArrowRight className="size-4" aria-hidden="true" />
@@ -1232,14 +1215,12 @@ function MiniMetric({
 function AllocationView({
   workspace,
   onRecalculate,
-  onSubmit,
   onEdit,
   onAddPlacement,
   onCreateVoucher,
 }: {
   workspace: WorkspaceData;
   onRecalculate: () => void;
-  onSubmit: () => void;
   onEdit: (line: AllocationLine) => void;
   onAddPlacement?: () => void;
   onCreateVoucher: () => void;
@@ -1249,28 +1230,34 @@ function AllocationView({
   const depositLimit = (workspace.parameters.equity * workspace.parameters.maxEquityPercent) / 100;
   const afterPlacement = workspace.parameters.existingDeposits + total;
   const limitUse = depositLimit ? (afterPlacement / depositLimit) * 100 : 0;
-  const canSubmit = proposal.status === "Ready" && workspace.allocationState === "Draft";
-  const canCreateVoucher = workspace.allocationState === "Approved" && proposal.lines.length > 0;
+  const canCreateVoucher = proposal.status === "Ready" && workspace.allocationState !== "Voucher created" && proposal.lines.length > 0;
 
   return (
     <div className="space-y-5">
       <Panel className="allocation-summary">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-2xl">
-            <div className="mb-2 flex items-center gap-2"><StatusBadge status={workspace.allocationState === "In review" ? "In approval" : workspace.allocationState === "Voucher created" ? "Voucher created" : proposal.status} /><span className="text-[11px] text-muted-foreground">Run · {formatDate(proposal.computedAt)}</span></div>
+            <div className="mb-2 flex items-center gap-2">
+              <StatusBadge status={workspace.allocationState === "Voucher created" ? "Voucher created" : proposal.status} />
+              <span className="text-[11px] text-muted-foreground">Run · {formatDate(proposal.computedAt)}</span>
+            </div>
             <h2 className="text-base font-semibold text-foreground">November deposit proposal</h2>
             <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{proposal.explanation}</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={onRecalculate}><RefreshCw className="size-3.5" aria-hidden="true" />Recalculate</Button>
-            {workspace.allocationState === "Draft" && onAddPlacement ? (
+            {workspace.allocationState !== "Voucher created" && onAddPlacement ? (
               <Button variant="outline" size="sm" onClick={onAddPlacement}>
                 <Plus className="size-3.5" aria-hidden="true" />
                 Add placement
               </Button>
             ) : null}
-            {canSubmit ? <Button size="sm" onClick={onSubmit} className="btn-blue"><Send className="size-3.5" aria-hidden="true" />Submit for approval</Button> : null}
-            {canCreateVoucher ? <Button size="sm" onClick={onCreateVoucher} className="btn-blue"><FileCheck2 className="size-3.5" aria-hidden="true" />Create ERP vouchers</Button> : null}
+            {canCreateVoucher ? (
+              <Button size="sm" onClick={onCreateVoucher} className="btn-blue">
+                <FileCheck2 className="size-3.5" aria-hidden="true" />
+                Create ERP vouchers
+              </Button>
+            ) : null}
           </div>
         </div>
         <div className="mt-6 grid grid-cols-2 gap-4 border-t border-border pt-5 lg:grid-cols-4">
@@ -1284,7 +1271,7 @@ function AllocationView({
       {proposal.status !== "Ready" ? (
         <Panel>
           <EmptyState title={proposal.status === "Not required" ? "No placement required" : "No compliant proposal"} description={proposal.explanation} />
-          {workspace.allocationState === "Draft" && onAddPlacement ? (
+          {workspace.allocationState !== "Voucher created" && onAddPlacement ? (
             <div className="mt-4 flex justify-center">
               <Button size="sm" variant="outline" onClick={onAddPlacement}>
                 <Plus className="mr-1 size-3.5" />
@@ -1631,218 +1618,16 @@ function BankRankingView({
   );
 }
 
-function ApprovalsView({
-  approvals,
-  onApprove,
-  onReject,
-}: {
-  approvals: ApprovalItem[];
-  onApprove: (id: string) => void;
-  onReject: (item: ApprovalItem) => void;
-}) {
-  const [search, setSearch] = useState("");
-  const [stageFilter, setStageFilter] = useState("All");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  const filteredApprovals = useMemo(() => {
-    return approvals.filter((item) => {
-      const matchSearch = item.document.toLowerCase().includes(search.toLowerCase()) || item.id.toLowerCase().includes(search.toLowerCase());
-      const matchStage = stageFilter === "All" || item.step === Number(stageFilter);
-      const matchStatus = statusFilter === "All" || item.status === statusFilter;
-      return matchSearch && matchStage && matchStatus;
-    });
-  }, [approvals, search, stageFilter, statusFilter]);
-
-  const pagedApprovals = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filteredApprovals.slice(start, start + pageSize);
-  }, [filteredApprovals, currentPage, pageSize]);
-
-  const pending = approvals.filter((item) => item.status === "Pending");
-  const history = approvals.filter((item) => item.status !== "Pending");
-
-  return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <MiniMetric label="Waiting for decision" value={String(pending.length).padStart(2, "0")} detail="Current approval stage" tone="warning" />
-        <MiniMetric label="Approval stages" value="03" detail="Sequential, no steps skipped" tone="positive" />
-        <MiniMetric label="Completed this cycle" value={String(history.filter((item) => item.status === "Approved").length).padStart(2, "0")} detail="Approval history shown below" tone="positive" />
-      </div>
-
-      {/* Table & Filter Container Card */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-2xs">
-        <div className="filter-toolbar">
-          <div className="relative min-w-[240px] flex-1">
-            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-            <input
-              type="text"
-              placeholder="Search by document, reference..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <span>Stage :</span>
-              <select
-                value={stageFilter}
-                onChange={(e) => {
-                  setStageFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-              >
-                <option value="All">All Stages</option>
-                <option value="0">Step 1: Treasury Head</option>
-                <option value="1">Step 2: Accounting Div Head</option>
-                <option value="2">Step 3: Director</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-muted-foreground">
-              <span>Status :</span>
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="h-8 rounded-lg border border-border bg-background px-2.5 text-xs text-foreground outline-none"
-              >
-                <option value="All">All Status</option>
-                <option value="Pending">Waiting / Pending</option>
-                <option value="Approved">Approved</option>
-                <option value="Returned">Returned</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground">
-              <Calendar className="size-3.5" />
-              <span>24/11/2026</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="table-wrap">
-          <table className="table-reference">
-            <thead>
-              <tr>
-                <th className="w-24 text-center">ACTION</th>
-                <th className="w-12 text-center">NO.</th>
-                <th>
-                  <div className="flex items-center gap-1">
-                    <span>DOCUMENT</span>
-                    <ChevronsUpDown className="size-3" />
-                  </div>
-                </th>
-                <th>TYPE</th>
-                <th>CURRENT APPROVER</th>
-                <th>STAGE</th>
-                <th>AMOUNT</th>
-                <th>SUBMITTED</th>
-                <th className="text-center">STATUS</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedApprovals.map((item, index) => {
-                const currentApprover = APPROVAL_STEPS[item.step] ?? APPROVAL_STEPS[0];
-                return (
-                  <tr key={item.id}>
-                    <td className="text-center">
-                      <div className="inline-flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={() => toast.info(`Document: ${item.document}`)}
-                          className="action-btn-circle"
-                          title="View Details"
-                          aria-label="View Details"
-                        >
-                          <Eye className="size-3.5" />
-                        </button>
-                        {item.status === "Pending" ? (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => onApprove(item.id)}
-                              className="action-btn-circle hover:bg-emerald-500/10 hover:text-emerald-600"
-                              title="Approve"
-                              aria-label="Approve"
-                            >
-                              <Check className="size-3.5 text-emerald-600" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => onReject(item)}
-                              className="action-btn-circle hover:bg-rose-500/10 hover:text-rose-600"
-                              title="Return for revision"
-                              aria-label="Return for revision"
-                            >
-                              <Trash2 className="size-3.5 text-rose-500" />
-                            </button>
-                          </>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="text-center font-mono text-muted-foreground">
-                      {(currentPage - 1) * pageSize + index + 1}
-                    </td>
-                    <td>
-                      <div className="font-semibold text-foreground">{item.document}</div>
-                      <div className="text-[10px] text-muted-foreground">{item.id} · by {item.submittedBy}</div>
-                      {item.comment ? <div className="mt-0.5 text-[10px] text-rose-500">Note: {item.comment}</div> : null}
-                    </td>
-                    <td>{item.type}</td>
-                    <td>{currentApprover}</td>
-                    <td><span className="step-pill">{item.step + 1} / 3</span></td>
-                    <td className="whitespace-nowrap font-mono font-medium tabular-nums text-foreground">{formatCompactRupiah(item.amount)}</td>
-                    <td className="whitespace-nowrap font-mono text-[11px]">{formatDate(item.submittedAt)}</td>
-                    <td className="text-center"><StatusBadge status={item.status} /></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {!filteredApprovals.length ? (
-            <div className="py-8">
-              <EmptyState title="No matching approval items" description="Change search or filters to see documents." />
-            </div>
-          ) : null}
-        </div>
-
-        <PaginationBar
-          currentPage={currentPage}
-          totalItems={filteredApprovals.length}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setCurrentPage(1);
-          }}
-        />
-      </div>
-    </div>
-  );
-}
-
 function InstructionsView({
   instructions,
   canCreate,
   onCreate,
-  onSubmit,
   onMarkSent,
   onPrint,
 }: {
   instructions: BankInstruction[];
   canCreate: boolean;
   onCreate: () => void;
-  onSubmit: (id: string) => void;
   onMarkSent: (id: string) => void;
   onPrint: (item: BankInstruction) => void;
 }) {
@@ -1896,8 +1681,6 @@ function InstructionsView({
               >
                 <option value="All">All Status</option>
                 <option value="Draft">Draft</option>
-                <option value="In approval">In approval</option>
-                <option value="Approved">Approved</option>
                 <option value="Sent to bank">Sent to bank</option>
               </select>
             </div>
@@ -1943,18 +1726,7 @@ function InstructionsView({
                       >
                         <Eye className="size-3.5" />
                       </button>
-                      {item.status === "Draft" ? (
-                        <button
-                          type="button"
-                          onClick={() => onSubmit(item.id)}
-                          className="action-btn-circle"
-                          title="Submit for Approval"
-                          aria-label="Submit for Approval"
-                        >
-                          <Send className="size-3.5 text-blue-600" />
-                        </button>
-                      ) : null}
-                      {item.status === "Approved" ? (
+                      {item.status !== "Sent to bank" ? (
                         <button
                           type="button"
                           onClick={() => onMarkSent(item.id)}
@@ -2775,38 +2547,6 @@ function BankEditDialog({
   );
 }
 
-function ReturnDialog({
-  item,
-  open,
-  onOpenChange,
-  onReturn,
-}: {
-  item: ApprovalItem | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onReturn: (id: string, note: string) => void;
-}) {
-  const [note, setNote] = useState("");
-  useEffect(() => setNote(""), [item]);
-  const submit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!item || !note.trim()) {
-      toast.error("Add a return note before sending this document back.");
-      return;
-    }
-    onReturn(item.id, note.trim());
-    onOpenChange(false);
-  };
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Return for revision</DialogTitle><DialogDescription>{item?.document ?? "Add a note for Cash Bank."}</DialogDescription></DialogHeader>
-        <form onSubmit={submit} className="space-y-4"><label className="block"><span className="field-label">Reason</span><Input autoFocus value={note} onChange={(event) => setNote(event.target.value)} placeholder="Describe the required change" /></label><DialogFooter><Button type="submit" variant="destructive">Return document</Button></DialogFooter></form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
 function InstructionLetterDialog({
   instruction,
   open,
@@ -3173,7 +2913,6 @@ export default function DepositDesk() {
   const [uploadExcelOpen, setUploadExcelOpen] = useState(false);
   const [editingAllocation, setEditingAllocation] = useState<AllocationLine | null>(null);
   const [editingBank, setEditingBank] = useState<Bank | null>(null);
-  const [returningApproval, setReturningApproval] = useState<ApprovalItem | null>(null);
   const [printingInstruction, setPrintingInstruction] = useState<BankInstruction | null>(null);
 
   useEffect(() => {
@@ -3220,8 +2959,6 @@ export default function DepositDesk() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const pendingCount = workspace.approvals.filter((item) => item.status === "Pending").length;
-
   const toggleTheme = () => setTheme((current) => current === "light" ? "dark" : "light");
 
   const recalculateProposal = () => {
@@ -3231,60 +2968,6 @@ export default function DepositDesk() {
       return withAudit({ ...current, proposal, allocationState: "Draft" }, "Allocation recalculated", `${formatCompactRupiah(proposal.totalAllocated)} · ${proposal.status}`);
     });
     toast.success("Allocation proposal recalculated.");
-  };
-
-  const submitProposal = () => {
-    if (workspace.proposal.status !== "Ready" || workspace.allocationState !== "Draft") {
-      toast.error("Calculate a compliant proposal before requesting approval.");
-      return;
-    }
-    const approval: ApprovalItem = {
-      id: `APR-${Date.now()}`,
-      document: "November placement proposal",
-      type: "Monthly report",
-      amount: workspace.proposal.totalAllocated,
-      step: 0,
-      status: "Pending",
-      submittedAt: new Date().toISOString().slice(0, 10),
-      submittedBy: "Cash Bank",
-    };
-    setWorkspace((current) => withAudit({ ...current, approvals: [approval, ...current.approvals], allocationState: "In review" }, "Proposal submitted", approval.document));
-    toast.success("Proposal sent to the first approver.");
-  };
-
-  const approveDocument = (id: string) => {
-    const item = workspace.approvals.find((approval) => approval.id === id);
-    if (!item || item.status !== "Pending") return;
-    const finalStep = item.step >= APPROVAL_STEPS.length - 1;
-    const nextStep = Math.min(item.step + 1, APPROVAL_STEPS.length - 1);
-    setWorkspace((current) => {
-      let next: WorkspaceData = {
-        ...current,
-        approvals: current.approvals.map((approval) => approval.id === id ? { ...approval, step: nextStep, status: finalStep ? "Approved" : "Pending" } : approval),
-      };
-      if (finalStep && item.document === "November placement proposal") {
-        next = { ...next, allocationState: "Approved", proposal: { ...next.proposal, lines: next.proposal.lines.map((line) => ({ ...line, status: "Approved" })) } };
-      }
-      if (finalStep && item.type === "Bank instruction") {
-        next = { ...next, instructions: next.instructions.map((instruction) => item.document.startsWith(instruction.id) ? { ...instruction, status: "Approved" } : instruction) };
-      }
-      const event = finalStep ? "Approval completed" : "Approval advanced";
-      const detail = finalStep ? item.document : `${item.document} · ${APPROVAL_STEPS[nextStep] ?? "Next approver"}`;
-      return withAudit(next, event, detail, APPROVAL_STEPS[item.step] ?? "Approver");
-    });
-    toast.success(finalStep ? "Final approval recorded." : `Sent to ${APPROVAL_STEPS[nextStep] ?? "next approver"}.`);
-  };
-
-  const returnDocument = (id: string, note: string) => {
-    const item = workspace.approvals.find((approval) => approval.id === id);
-    if (!item) return;
-    setWorkspace((current) => {
-      let next: WorkspaceData = { ...current, approvals: current.approvals.map((approval) => approval.id === id ? { ...approval, status: "Returned", comment: note } : approval) };
-      if (item.document === "November placement proposal") next = { ...next, allocationState: "Draft", proposal: { ...next.proposal, lines: next.proposal.lines.map((line) => ({ ...line, status: "Suggested" })) } };
-      if (item.type === "Bank instruction") next = { ...next, instructions: next.instructions.map((instruction) => item.document.startsWith(instruction.id) ? { ...instruction, status: "Draft" } : instruction) };
-      return withAudit(next, "Document returned", `${item.document} · ${note}`, APPROVAL_STEPS[item.step] ?? "Approver");
-    });
-    toast.success("Document returned to Cash Bank with a note.");
   };
 
   const validateCashflow = (id: string) => {
@@ -3440,8 +3123,8 @@ export default function DepositDesk() {
   };
 
   const createVouchers = () => {
-    if (workspace.allocationState !== "Approved" || workspace.proposal.lines.length === 0) {
-      toast.error("Complete all approval stages before creating vouchers.");
+    if (workspace.proposal.lines.length === 0) {
+      toast.error("Calculate a compliant proposal before creating vouchers.");
       return;
     }
     setWorkspace((current) => {
@@ -3454,7 +3137,7 @@ export default function DepositDesk() {
 
   const createInstructions = () => {
     if (workspace.allocationState !== "Voucher created") {
-      toast.error("Create vouchers from an approved allocation first.");
+      toast.error("Create ERP vouchers before generating bank instructions.");
       return;
     }
     const newInstructions = workspace.proposal.lines.filter((line) => line.voucherNumber && !workspace.instructions.some((item) => item.voucherNumber === line.voucherNumber)).map((line) => ({
@@ -3471,30 +3154,13 @@ export default function DepositDesk() {
       toast.info("Instructions have already been created for these vouchers.");
       return;
     }
-    setWorkspace((current) => withAudit({ ...current, instructions: [...newInstructions, ...current.instructions] }, "Bank instructions drafted", `${newInstructions.length} instruction(s) created from approved vouchers`));
+    setWorkspace((current) => withAudit({ ...current, instructions: [...newInstructions, ...current.instructions] }, "Bank instructions drafted", `${newInstructions.length} instruction(s) created from vouchers`));
     toast.success(`${newInstructions.length} bank instruction draft(s) created.`);
-  };
-
-  const submitInstruction = (id: string) => {
-    const instruction = workspace.instructions.find((item) => item.id === id);
-    if (!instruction || instruction.status !== "Draft") return;
-    const approval: ApprovalItem = {
-      id: `APR-${Date.now()}`,
-      document: `${instruction.id} · ${instruction.bankName} placement`,
-      type: "Bank instruction",
-      amount: instruction.amount,
-      step: 0,
-      status: "Pending",
-      submittedAt: new Date().toISOString().slice(0, 10),
-      submittedBy: "Cash Bank",
-    };
-    setWorkspace((current) => withAudit({ ...current, approvals: [approval, ...current.approvals], instructions: current.instructions.map((item) => item.id === id ? { ...item, status: "In approval" } : item) }, "Bank instruction submitted", approval.document));
-    toast.success("Instruction sent to the first approver.");
   };
 
   const markInstructionSent = (id: string) => {
     const item = workspace.instructions.find((instruction) => instruction.id === id);
-    if (!item || item.status !== "Approved") return;
+    if (!item || item.status === "Sent to bank") return;
     setWorkspace((current) => withAudit({ ...current, instructions: current.instructions.map((instruction) => instruction.id === id ? { ...instruction, status: "Sent to bank" } : instruction) }, "Instruction sent to bank", `${item.id} · manual delivery recorded`));
     toast.success("Manual delivery recorded.");
   };
@@ -3580,12 +3246,11 @@ export default function DepositDesk() {
             ) : null}
           </PageHeading>
 
-          {activeView === "dashboard" ? <DashboardView workspace={workspace} onNavigate={setActiveView} onRunProposal={recalculateProposal} onApprove={approveDocument} /> : null}
+          {activeView === "dashboard" ? <DashboardView workspace={workspace} onNavigate={setActiveView} onRunProposal={recalculateProposal} /> : null}
           {activeView === "cashflow" ? <CashflowView workspace={workspace} onValidate={validateCashflow} onReturn={requestRevision} onCalculate={calculateBalance} onExport={exportCashflows} onNewForm={() => setNewFormOpen(true)} /> : null}
-          {activeView === "allocation" ? <AllocationView workspace={workspace} onRecalculate={recalculateProposal} onSubmit={submitProposal} onEdit={setEditingAllocation} onAddPlacement={handleAddPlacement} onCreateVoucher={createVouchers} /> : null}
+          {activeView === "allocation" ? <AllocationView workspace={workspace} onRecalculate={recalculateProposal} onEdit={setEditingAllocation} onAddPlacement={handleAddPlacement} onCreateVoucher={createVouchers} /> : null}
           {activeView === "ranking" ? <BankRankingView banks={workspace.banks} onEdit={setEditingBank} onExport={() => exportCsv("bank-ranking.csv", workspace.banks.map((bank) => ({ Rank: bank.rank, Bank: bank.name, Rate: bank.depositRate, ServiceRating: bank.serviceRating, CreditRating: bank.creditRating, NPL: bank.npl, NIM: bank.nim, CAR: bank.car, LDR: bank.ldr, MaxAllocationPercent: bank.maxAllocationPercent, Active: String(bank.active) })))} /> : null}
-          {activeView === "approvals" ? <ApprovalsView approvals={workspace.approvals} onApprove={approveDocument} onReject={setReturningApproval} /> : null}
-          {activeView === "instructions" ? <InstructionsView instructions={workspace.instructions} canCreate={workspace.allocationState === "Voucher created"} onCreate={createInstructions} onSubmit={submitInstruction} onMarkSent={markInstructionSent} onPrint={(item) => setPrintingInstruction(item)} /> : null}
+          {activeView === "instructions" ? <InstructionsView instructions={workspace.instructions} canCreate={workspace.allocationState === "Voucher created"} onCreate={createInstructions} onMarkSent={markInstructionSent} onPrint={(item) => setPrintingInstruction(item)} /> : null}
           {activeView === "reports" ? <ReportsView workspace={workspace} onPrint={printPage} onExport={(kind) => kind === "cashflow" ? exportCashflows() : kind === "allocation" ? exportAllocation() : exportCsv("deposit-position.csv", workspace.banks.map((bank) => ({ Bank: bank.name, DepositBalanceIDR: bank.depositBalance, SharePercent: ((bank.depositBalance / Math.max(1, workspace.parameters.existingDeposits)) * 100).toFixed(1), Rate: bank.depositRate, Rank: bank.rank })))} /> : null}
           {activeView === "archive" ? <ArchiveView workspace={workspace} onExport={() => exportCsv("data-archive.csv", [...workspace.cashflows.map((item) => ({ ID: item.id, Document: item.reference, Type: "Cash flow form", Date: item.dueDate, Status: item.status })), ...workspace.approvals.map((item) => ({ ID: item.id, Document: item.document, Type: item.type, Date: item.submittedAt, Status: item.status })), ...workspace.instructions.map((item) => ({ ID: item.id, Document: `${item.bankName} bank instruction`, Type: "Bank instruction", Date: item.createdAt, Status: item.status }))])} onExportAudit={exportAuditTrail} /> : null}
           {activeView === "settings" ? <MasterDataView parameters={workspace.parameters} onSaveParameters={saveParameters} onResetDefaults={resetDefaults} /> : null}
@@ -3601,7 +3266,6 @@ export default function DepositDesk() {
       <CashflowFormDialog open={newFormOpen} onOpenChange={setNewFormOpen} onSave={addCashflow} />
       <AllocationEditDialog line={editingAllocation} banks={workspace.banks} open={editingAllocation !== null} onOpenChange={(open) => { if (!open) setEditingAllocation(null); }} onSave={editAllocation} />
       <BankEditDialog bank={editingBank} open={editingBank !== null} onOpenChange={(open) => { if (!open) setEditingBank(null); }} onSave={saveBank} />
-      <ReturnDialog item={returningApproval} open={returningApproval !== null} onOpenChange={(open) => { if (!open) setReturningApproval(null); }} onReturn={returnDocument} />
       <InstructionLetterDialog instruction={printingInstruction} open={printingInstruction !== null} onOpenChange={(open) => { if (!open) setPrintingInstruction(null); }} />
       <UploadExcelDialog open={uploadExcelOpen} onOpenChange={setUploadExcelOpen} onImport={handleImportCashflow} />
     </div>
