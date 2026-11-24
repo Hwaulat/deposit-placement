@@ -1,0 +1,559 @@
+export type CashflowDirection = "Incoming" | "Outgoing";
+export type CashflowStatus = "Draft" | "Submitted" | "Need revision" | "Validated";
+export type CashflowSource = "Department form" | "ERP feed" | "System forecast";
+
+export interface CashflowItem {
+  id: string;
+  reference: string;
+  department: string;
+  category: string;
+  direction: CashflowDirection;
+  source: CashflowSource;
+  amount: number;
+  dueDate: string;
+  status: CashflowStatus;
+}
+
+export interface Bank {
+  id: string;
+  name: string;
+  rank: number;
+  depositRate: number;
+  serviceRating: string;
+  creditRating: string;
+  npl: number;
+  nim: number;
+  car: number;
+  ldr: number;
+  maxAllocationPercent: number;
+  depositBalance: number;
+  active: boolean;
+}
+
+export interface DepositParameters {
+  depositTrigger: number;
+  maxEquityPercent: number;
+  minimumPlacement: number;
+  equity: number;
+  existingDeposits: number;
+  availableCash: number;
+}
+
+export type AllocationStatus = "Suggested" | "Adjusted" | "Approved" | "Voucher created";
+
+export interface AllocationLine {
+  id: string;
+  bankId: string;
+  bankName: string;
+  rank: number;
+  amount: number;
+  annualRate: number;
+  tenorDays: number;
+  maturityDate: string;
+  reason: string;
+  status: AllocationStatus;
+  voucherNumber?: string;
+}
+
+export interface AllocationProposal {
+  status: "Ready" | "No solution" | "Not required";
+  computedAt: string;
+  targetAmount: number;
+  totalAllocated: number;
+  remainingCash: number;
+  remainingDepositRoom: number;
+  explanation: string;
+  lines: AllocationLine[];
+}
+
+export interface ApprovalItem {
+  id: string;
+  document: string;
+  type: "Monthly report" | "Weekly report" | "Bank instruction";
+  amount: number;
+  step: number;
+  status: "Pending" | "Approved" | "Returned";
+  submittedAt: string;
+  submittedBy: string;
+  comment?: string;
+}
+
+export interface BankInstruction {
+  id: string;
+  bankName: string;
+  amount: number;
+  voucherNumber: string;
+  maturityDate: string;
+  status: "Draft" | "In approval" | "Approved" | "Sent to bank";
+  template: string;
+  createdAt: string;
+}
+
+export interface AuditRecord {
+  id: string;
+  event: string;
+  detail: string;
+  actor: string;
+  occurredAt: string;
+}
+
+export interface WorkspaceData {
+  cashBalance: number;
+  parameters: DepositParameters;
+  banks: Bank[];
+  cashflows: CashflowItem[];
+  proposal: AllocationProposal;
+  allocationState: "Draft" | "In review" | "Approved" | "Voucher created";
+  approvals: ApprovalItem[];
+  instructions: BankInstruction[];
+  auditTrail: AuditRecord[];
+  lastErpSync: string;
+}
+
+export const APPROVAL_STEPS = [
+  "Treasury Dept. Head",
+  "Finance Accounting Div. Head",
+  "Finance Accounting Director",
+] as const;
+
+export const DEMO_PARAMETERS: DepositParameters = {
+  depositTrigger: 500_000_000,
+  maxEquityPercent: 30,
+  minimumPlacement: 100_000_000,
+  equity: 16_400_000_000,
+  existingDeposits: 2_150_000_000,
+  availableCash: 3_250_000_000,
+};
+
+export const DEMO_BANKS: Bank[] = [
+  {
+    id: "bca",
+    name: "Bank Central Asia",
+    rank: 1,
+    depositRate: 5.4,
+    serviceRating: "A",
+    creditRating: "AAA",
+    npl: 1.9,
+    nim: 5.8,
+    car: 29.4,
+    ldr: 79.7,
+    maxAllocationPercent: 30,
+    depositBalance: 600_000_000,
+    active: true,
+  },
+  {
+    id: "mandiri",
+    name: "Bank Mandiri",
+    rank: 2,
+    depositRate: 5.3,
+    serviceRating: "A",
+    creditRating: "AAA",
+    npl: 1.1,
+    nim: 5.1,
+    car: 20.8,
+    ldr: 91.2,
+    maxAllocationPercent: 25,
+    depositBalance: 480_000_000,
+    active: true,
+  },
+  {
+    id: "bni",
+    name: "Bank Negara Indonesia",
+    rank: 3,
+    depositRate: 5.2,
+    serviceRating: "A-",
+    creditRating: "AAA",
+    npl: 2.1,
+    nim: 4.2,
+    car: 21.5,
+    ldr: 94.4,
+    maxAllocationPercent: 20,
+    depositBalance: 410_000_000,
+    active: true,
+  },
+  {
+    id: "cimb",
+    name: "CIMB Niaga",
+    rank: 4,
+    depositRate: 5.1,
+    serviceRating: "A-",
+    creditRating: "AAA",
+    npl: 2.3,
+    nim: 4.6,
+    car: 23.1,
+    ldr: 89.6,
+    maxAllocationPercent: 15,
+    depositBalance: 340_000_000,
+    active: true,
+  },
+  {
+    id: "danamon",
+    name: "Bank Danamon",
+    rank: 5,
+    depositRate: 4.95,
+    serviceRating: "B+",
+    creditRating: "AA+",
+    npl: 2.5,
+    nim: 7.1,
+    car: 26.8,
+    ldr: 94.1,
+    maxAllocationPercent: 10,
+    depositBalance: 320_000_000,
+    active: true,
+  },
+];
+
+export const DEMO_CASHFLOWS: CashflowItem[] = [
+  {
+    id: "CF-24018",
+    reference: "Supplier payments — local",
+    department: "Accounts Payable",
+    category: "Supplier payment",
+    direction: "Outgoing",
+    source: "ERP feed",
+    amount: 1_240_000_000,
+    dueDate: "2026-11-26",
+    status: "Validated",
+  },
+  {
+    id: "CF-24017",
+    reference: "Customer collections — week 48",
+    department: "Accounts Receivable",
+    category: "Customer collection",
+    direction: "Incoming",
+    source: "ERP feed",
+    amount: 1_960_000_000,
+    dueDate: "2026-11-25",
+    status: "Validated",
+  },
+  {
+    id: "CF-24016",
+    reference: "November payroll",
+    department: "People & Culture",
+    category: "Payroll",
+    direction: "Outgoing",
+    source: "Department form",
+    amount: 842_500_000,
+    dueDate: "2026-11-27",
+    status: "Submitted",
+  },
+  {
+    id: "CF-24015",
+    reference: "Scrap sales forecast",
+    department: "Logistics",
+    category: "Scrap sales",
+    direction: "Incoming",
+    source: "ERP feed",
+    amount: 184_000_000,
+    dueDate: "2026-11-30",
+    status: "Validated",
+  },
+  {
+    id: "CF-24014",
+    reference: "GA utilities — monthly estimate",
+    department: "General Affairs",
+    category: "Utilities",
+    direction: "Outgoing",
+    source: "Department form",
+    amount: 286_000_000,
+    dueDate: "2026-11-30",
+    status: "Need revision",
+  },
+  {
+    id: "CF-24013",
+    reference: "Marketing business plan",
+    department: "Marketing",
+    category: "Sales business plan",
+    direction: "Incoming",
+    source: "Department form",
+    amount: 1_420_000_000,
+    dueDate: "2026-12-03",
+    status: "Draft",
+  },
+  {
+    id: "CF-24012",
+    reference: "Import supplier payments",
+    department: "Accounts Payable",
+    category: "Supplier payment",
+    direction: "Outgoing",
+    source: "ERP feed",
+    amount: 698_000_000,
+    dueDate: "2026-12-04",
+    status: "Validated",
+  },
+  {
+    id: "CF-24011",
+    reference: "Tax and statutory payments",
+    department: "Accounting",
+    category: "Taxation",
+    direction: "Outgoing",
+    source: "Department form",
+    amount: 412_000_000,
+    dueDate: "2026-12-05",
+    status: "Validated",
+  },
+];
+
+export function addBusinessDays(startDate: string, businessDays: number, holidays: string[] = []) {
+  const date = new Date(`${startDate}T12:00:00Z`);
+  let daysAdded = 0;
+
+  while (daysAdded < businessDays) {
+    date.setUTCDate(date.getUTCDate() + 1);
+    const day = date.getUTCDay();
+    const isoDate = date.toISOString().slice(0, 10);
+    if (day !== 0 && day !== 6 && !holidays.includes(isoDate)) {
+      daysAdded += 1;
+    }
+  }
+
+  while (date.getUTCDay() === 0 || date.getUTCDay() === 6 || holidays.includes(date.toISOString().slice(0, 10))) {
+    date.setUTCDate(date.getUTCDate() + 1);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
+function emptyProposal(
+  status: AllocationProposal["status"],
+  computedAt: string,
+  availableCash: number,
+  remainingDepositRoom: number,
+  explanation: string,
+): AllocationProposal {
+  return {
+    status,
+    computedAt,
+    targetAmount: 0,
+    totalAllocated: 0,
+    remainingCash: availableCash,
+    remainingDepositRoom,
+    explanation,
+    lines: [],
+  };
+}
+
+export function runAllocationProposal(
+  parameters: DepositParameters,
+  banks: Bank[],
+  asOfDate = "2026-11-24",
+  holidays: string[] = [],
+): AllocationProposal {
+  const maximumDeposit = (parameters.equity * parameters.maxEquityPercent) / 100;
+  const remainingDepositRoom = Math.max(0, maximumDeposit - parameters.existingDeposits);
+
+  if (parameters.availableCash <= parameters.depositTrigger) {
+    return emptyProposal(
+      "Not required",
+      asOfDate,
+      parameters.availableCash,
+      remainingDepositRoom,
+      "Cash is at or below the deposit trigger, so no placement is required.",
+    );
+  }
+
+  const targetAmount = Math.min(parameters.availableCash, remainingDepositRoom);
+  if (targetAmount < parameters.minimumPlacement) {
+    return emptyProposal(
+      "No solution",
+      asOfDate,
+      parameters.availableCash,
+      remainingDepositRoom,
+      `Available cash and equity headroom do not support the minimum ${formatRupiah(parameters.minimumPlacement)} placement.`,
+    );
+  }
+
+  const eligibleBanks = banks
+    .filter((bank) => bank.active && bank.depositRate > 0 && bank.maxAllocationPercent > 0)
+    .toSorted((left, right) => left.rank - right.rank);
+
+  if (eligibleBanks.length === 0) {
+    return emptyProposal(
+      "No solution",
+      asOfDate,
+      parameters.availableCash,
+      remainingDepositRoom,
+      "No active, ranked bank is available for this placement.",
+    );
+  }
+
+  let remainingAmount = targetAmount;
+  const lines: AllocationLine[] = [];
+
+  for (const bank of eligibleBanks) {
+    const bankLimit = Math.floor(
+      (targetAmount * bank.maxAllocationPercent) / 100 / 1_000_000,
+    ) * 1_000_000;
+    const amount = Math.min(remainingAmount, bankLimit);
+    if (amount < parameters.minimumPlacement) continue;
+
+    lines.push({
+      id: `AL-${asOfDate.replaceAll("-", "")}-${bank.id}`,
+      bankId: bank.id,
+      bankName: bank.name,
+      rank: bank.rank,
+      amount,
+      annualRate: bank.depositRate,
+      tenorDays: 90,
+      maturityDate: addBusinessDays(asOfDate, 90, holidays),
+      reason: `Rank #${bank.rank} · ${bank.depositRate.toFixed(2)}% p.a. · within ${bank.maxAllocationPercent}% bank limit`,
+      status: "Suggested",
+    });
+    remainingAmount -= amount;
+  }
+
+  const totalAllocated = lines.reduce((total, line) => total + line.amount, 0);
+  if (totalAllocated < parameters.minimumPlacement) {
+    return emptyProposal(
+      "No solution",
+      asOfDate,
+      parameters.availableCash,
+      remainingDepositRoom,
+      "Bank limits leave no placement that meets the minimum amount. Review the active bank limits.",
+    );
+  }
+
+  return {
+    status: "Ready",
+    computedAt: asOfDate,
+    targetAmount,
+    totalAllocated,
+    remainingCash: parameters.availableCash - totalAllocated,
+    remainingDepositRoom: Math.max(0, remainingDepositRoom - totalAllocated),
+    explanation: `Suggested by bank ranking and current limits. ${formatRupiah(totalAllocated)} stays within available cash and the ${parameters.maxEquityPercent}% equity ceiling.`,
+    lines,
+  };
+}
+
+export function validateAllocationLines(
+  lines: AllocationLine[],
+  parameters: DepositParameters,
+): { valid: boolean; message: string } {
+  const total = lines.reduce((sum, line) => sum + line.amount, 0);
+  const maximumDeposit = (parameters.equity * parameters.maxEquityPercent) / 100;
+
+  if (lines.some((line) => line.amount < parameters.minimumPlacement)) {
+    return {
+      valid: false,
+      message: `Each placement must be at least ${formatRupiah(parameters.minimumPlacement)}.`,
+    };
+  }
+  if (total > parameters.availableCash) {
+    return { valid: false, message: "The total placement cannot exceed available cash." };
+  }
+  if (total + parameters.existingDeposits > maximumDeposit) {
+    return {
+      valid: false,
+      message: `Total deposits cannot exceed ${parameters.maxEquityPercent}% of equity.`,
+    };
+  }
+
+  return { valid: true, message: "The adjustment stays within the current placement limits." };
+}
+
+export function formatRupiah(amount: number) {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function formatCompactRupiah(amount: number) {
+  const absoluteAmount = Math.abs(amount);
+  if (absoluteAmount >= 1_000_000_000) {
+    return `Rp ${(amount / 1_000_000_000).toFixed(2).replace(/0$/, "").replace(/\.0$/, "")}bn`;
+  }
+  if (absoluteAmount >= 1_000_000) {
+    return `Rp ${(amount / 1_000_000).toFixed(0)}m`;
+  }
+  return formatRupiah(amount);
+}
+
+export function formatDate(value: string) {
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(`${value}T00:00:00Z`));
+}
+
+const DEMO_PROPOSAL = runAllocationProposal(DEMO_PARAMETERS, DEMO_BANKS);
+
+export const DEMO_WORKSPACE: WorkspaceData = {
+  cashBalance: 8_420_000_000,
+  parameters: DEMO_PARAMETERS,
+  banks: DEMO_BANKS,
+  cashflows: DEMO_CASHFLOWS,
+  proposal: DEMO_PROPOSAL,
+  allocationState: "Draft",
+  approvals: [
+    {
+      id: "APR-2026-032",
+      document: "October deposit proposal",
+      type: "Monthly report",
+      amount: 1_840_000_000,
+      step: 2,
+      status: "Pending",
+      submittedAt: "2026-11-20",
+      submittedBy: "Cash Bank",
+    },
+    {
+      id: "APR-2026-031",
+      document: "Week 47 placement report",
+      type: "Weekly report",
+      amount: 760_000_000,
+      step: 0,
+      status: "Pending",
+      submittedAt: "2026-11-23",
+      submittedBy: "Cash Bank",
+    },
+  ],
+  instructions: [
+    {
+      id: "BI-2026-0289",
+      bankName: "Bank Mandiri",
+      amount: 460_000_000,
+      voucherNumber: "VCH-26-1122",
+      maturityDate: "2027-02-18",
+      status: "Approved",
+      template: "Mandiri — Universal",
+      createdAt: "2026-11-19",
+    },
+    {
+      id: "BI-2026-0286",
+      bankName: "Bank Central Asia",
+      amount: 320_000_000,
+      voucherNumber: "VCH-26-1117",
+      maturityDate: "2027-02-12",
+      status: "Sent to bank",
+      template: "BCA — Fixed deposit",
+      createdAt: "2026-11-17",
+    },
+  ],
+  auditTrail: [
+    {
+      id: "AUD-03",
+      event: "ERP sync completed",
+      detail: "24 supplier, collection and scrap-sales records",
+      actor: "System",
+      occurredAt: "2026-11-24T08:15:00Z",
+    },
+    {
+      id: "AUD-02",
+      event: "Report submitted for approval",
+      detail: "October deposit proposal · Finance Accounting Director",
+      actor: "Cash Bank",
+      occurredAt: "2026-11-23T10:20:00Z",
+    },
+    {
+      id: "AUD-01",
+      event: "Cash flow form validated",
+      detail: "Customer collections — week 48",
+      actor: "Cash Bank",
+      occurredAt: "2026-11-23T09:40:00Z",
+    },
+  ],
+  lastErpSync: "2026-11-24T08:15:00Z",
+};

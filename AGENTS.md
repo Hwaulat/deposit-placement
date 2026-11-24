@@ -28,3 +28,6 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Project architecture
+- Keep the Deposit Desk prototype client-side: calculation rules and sample records live in `src/lib/deposit-model.ts`, the workspace views live in `src/components/treasury/deposit-desk.tsx`, and browser-local persistence or simulated integrations must not be presented as connected services. This keeps the explicitly unauthenticated prototype honest and easy to replace when real integrations are approved.
