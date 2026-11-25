@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useMemo, useState, type FormEvent } from "react";
 import {
   Activity,
   ArrowDownRight,
@@ -18,6 +18,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ChevronsLeft,
   ChevronsRight,
   ChevronsUpDown,
@@ -113,7 +114,7 @@ type WorkspaceView =
 
 type Theme = "light" | "dark";
 
-const STORAGE_KEY = "deposit-desk-workspace-v2";
+const STORAGE_KEY = "deposit-desk-workspace-v3";
 const THEME_KEY = "deposit-desk-theme";
 
 const NAV_GROUPS: { label: string; items: { id: WorkspaceView; label: string; icon: LucideIcon }[] }[] = [
@@ -1450,7 +1451,15 @@ function CashflowView({
                   </td>
                   <td>
                     <div className="font-semibold text-foreground">{item.reference}</div>
-                    <div className="text-[10px] text-muted-foreground">{item.id}</div>
+                    <div className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                      <span>{item.id}</span>
+                      {item.bankName ? (
+                        <>
+                          <span>·</span>
+                          <span className="font-medium text-[#1F5AA6] dark:text-blue-400">{item.bankName}</span>
+                        </>
+                      ) : null}
+                    </div>
                   </td>
                   <td>{item.department}</td>
                   <td>{item.category}</td>
@@ -1544,6 +1553,24 @@ function AllocationView({
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [expandedLineIds, setExpandedLineIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpand = (id: string) => {
+    setExpandedLineIds((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const getBankCashflows = (bankName: string) => {
+    const normalizedBank = bankName.toLowerCase().replace(/^(bank\s+)/i, "").trim();
+    return workspace.cashflows.filter((cf) => {
+      if (!cf.bankName) return false;
+      const normalizedCf = cf.bankName.toLowerCase().replace(/^(bank\s+)/i, "").trim();
+      return (
+        cf.bankName.toLowerCase() === bankName.toLowerCase() ||
+        normalizedCf.includes(normalizedBank) ||
+        normalizedBank.includes(normalizedCf)
+      );
+    });
+  };
 
   const filteredLines = useMemo(() => {
     return proposal.lines.filter((line) => {
@@ -1686,7 +1713,7 @@ function AllocationView({
               <table className="table-reference">
                 <thead>
                   <tr>
-                    <th className="w-20 text-center">ACTION</th>
+                    <th className="w-24 text-center">ACTION</th>
                     <th>
                       <div className="flex items-center gap-1">
                         <span>BANK NAME</span>
@@ -1701,38 +1728,167 @@ function AllocationView({
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredLines.map((line) => (
-                    <tr key={line.id}>
-                      <td className="text-center">
-                        <div className="inline-flex items-center gap-1.5">
-                          <Button
-                            type="button"
-                            variant="iconEdit"
-                            onClick={() => onEdit(line)}
-                            disabled={workspace.allocationState !== "Draft"}
-                            title="Adjust Allocation"
-                            aria-label="Adjust Allocation"
-                          >
-                            <Pencil className="size-4" />
-                          </Button>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <span className="rank-mark">{line.rank}</span>
-                          <div>
-                            <p className="font-semibold text-foreground">{line.bankName}</p>
-                            <p className="text-[10px] text-muted-foreground">{line.reason}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="whitespace-nowrap font-mono font-medium tabular-nums text-foreground">{formatCompactRupiah(line.amount)}</td>
-                      <td className="font-mono tabular-nums">{line.annualRate.toFixed(2)}%</td>
-                      <td>{line.tenorDays} days</td>
-                      <td className="whitespace-nowrap font-mono text-[11px]">{formatDate(line.maturityDate)}</td>
-                      <td className="text-center"><StatusBadge status={line.status} /></td>
-                    </tr>
-                  ))}
+                  {filteredLines.map((line) => {
+                    const isExpanded = !!expandedLineIds[line.id];
+                    const bankCashflows = getBankCashflows(line.bankName);
+                    const incomingTotal = bankCashflows
+                      .filter((cf) => cf.direction === "Incoming")
+                      .reduce((sum, cf) => sum + cf.amount, 0);
+                    const outgoingTotal = bankCashflows
+                      .filter((cf) => cf.direction === "Outgoing")
+                      .reduce((sum, cf) => sum + cf.amount, 0);
+                    const netCash = incomingTotal - outgoingTotal;
+
+                    return (
+                      <Fragment key={line.id}>
+                        <tr className={cn(isExpanded && "bg-muted/15 dark:bg-muted/10")}>
+                          <td className="text-center">
+                            <div className="inline-flex items-center gap-1.5">
+                              <Button
+                                type="button"
+                                variant="iconView"
+                                onClick={() => toggleExpand(line.id)}
+                                title={isExpanded ? "Tutup rincian transaksi cash flow" : "Lihat rincian transaksi cash flow"}
+                                aria-label={isExpanded ? "Tutup rincian transaksi cash flow" : "Lihat rincian transaksi cash flow"}
+                                className={cn(isExpanded && "bg-[#EFF4FB] border-[#1F5AA6] text-[#1F5AA6] dark:bg-[#1F5AA6]/20")}
+                              >
+                                {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="iconEdit"
+                                onClick={() => onEdit(line)}
+                                disabled={workspace.allocationState !== "Draft"}
+                                title="Adjust Allocation"
+                                aria-label="Adjust Allocation"
+                              >
+                                <Pencil className="size-4" />
+                              </Button>
+                            </div>
+                          </td>
+                          <td>
+                            <div
+                              className="flex items-center gap-2 cursor-pointer group select-none"
+                              onClick={() => toggleExpand(line.id)}
+                              role="button"
+                              tabIndex={0}
+                              title={isExpanded ? "Klik untuk menutup rincian" : "Klik untuk melihat rincian transaksi cash flow"}
+                            >
+                              <span className="rank-mark">{line.rank}</span>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <p className="font-semibold text-foreground group-hover:text-primary transition-colors">{line.bankName}</p>
+                                  {isExpanded ? (
+                                    <ChevronUp className="size-3.5 text-primary" />
+                                  ) : (
+                                    <ChevronDown className="size-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                  )}
+                                </div>
+                                <p className="text-[10px] text-muted-foreground">{line.reason}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="whitespace-nowrap font-mono font-medium tabular-nums text-foreground">{formatCompactRupiah(line.amount)}</td>
+                          <td className="font-mono tabular-nums">{line.annualRate.toFixed(2)}%</td>
+                          <td>{line.tenorDays} days</td>
+                          <td className="whitespace-nowrap font-mono text-[11px]">{formatDate(line.maturityDate)}</td>
+                          <td className="text-center"><StatusBadge status={line.status} /></td>
+                        </tr>
+
+                        {isExpanded ? (
+                          <tr className="border-b border-border bg-slate-50/70 dark:bg-slate-900/50">
+                            <td colSpan={7} className="p-0">
+                              <div className="p-4 pl-6 sm:pl-8 border-l-4 border-l-[#1F5AA6] space-y-3">
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="text-xs font-bold text-foreground">
+                                        Rincian Transaksi Cash Flow — {line.bankName}
+                                      </h4>
+                                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                                        {bankCashflows.length} Transaksi Terkait
+                                      </span>
+                                    </div>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                                      Daftar transaksi arus kas operasional (penerimaan & pengeluaran) yang mendasari likuiditas penempatan deposito di bank ini.
+                                    </p>
+                                  </div>
+                                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                                    <div className="rounded border border-emerald-200 bg-emerald-50/80 dark:bg-emerald-950/30 dark:border-emerald-800 px-2.5 py-1 text-emerald-700 dark:text-emerald-400">
+                                      <span className="text-[10px] uppercase font-sans font-semibold mr-1.5 opacity-80">Masuk:</span>
+                                      +{formatCompactRupiah(incomingTotal)}
+                                    </div>
+                                    <div className="rounded border border-rose-200 bg-rose-50/80 dark:bg-rose-950/30 dark:border-rose-800 px-2.5 py-1 text-rose-700 dark:text-rose-400">
+                                      <span className="text-[10px] uppercase font-sans font-semibold mr-1.5 opacity-80">Keluar:</span>
+                                      -{formatCompactRupiah(outgoingTotal)}
+                                    </div>
+                                    <div className="rounded border border-blue-200 bg-blue-50/80 dark:bg-blue-950/30 dark:border-blue-800 px-2.5 py-1 font-semibold text-[#1F5AA6] dark:text-blue-300">
+                                      <span className="text-[10px] uppercase font-sans font-semibold mr-1.5 opacity-80">Net:</span>
+                                      {netCash >= 0 ? "+" : ""}{formatCompactRupiah(netCash)}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {bankCashflows.length > 0 ? (
+                                  <div className="overflow-hidden rounded-lg border border-border bg-card shadow-2xs">
+                                    <table className="w-full text-xs">
+                                      <thead>
+                                        <tr className="border-b border-border bg-muted/40 text-[10px] font-bold uppercase text-muted-foreground">
+                                          <th className="px-3 py-2 text-left">REF ID</th>
+                                          <th className="px-3 py-2 text-left">REFERENCE & CATEGORY</th>
+                                          <th className="px-3 py-2 text-left">DEPARTMENT</th>
+                                          <th className="px-3 py-2 text-center">ARAH</th>
+                                          <th className="px-3 py-2 text-right">JUMLAH (IDR)</th>
+                                          <th className="px-3 py-2 text-left">JATUH TEMPO</th>
+                                          <th className="px-3 py-2 text-center">STATUS</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="divide-y divide-border">
+                                        {bankCashflows.map((cf) => (
+                                          <tr key={cf.id} className="hover:bg-muted/20 transition-colors">
+                                            <td className="px-3 py-2 font-mono text-[11px] font-medium text-foreground">{cf.id}</td>
+                                            <td className="px-3 py-2">
+                                              <div className="font-medium text-foreground">{cf.reference}</div>
+                                              <div className="text-[10px] text-muted-foreground">{cf.category} · {cf.source}</div>
+                                            </td>
+                                            <td className="px-3 py-2 text-muted-foreground text-[11px]">{cf.department}</td>
+                                            <td className="px-3 py-2 text-center">
+                                              <span className={cn(
+                                                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                                                cf.direction === "Incoming"
+                                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                                                  : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
+                                              )}>
+                                                {cf.direction === "Incoming" ? "↓ Masuk" : "↑ Keluar"}
+                                              </span>
+                                            </td>
+                                            <td className={cn(
+                                              "px-3 py-2 text-right font-mono tabular-nums font-semibold",
+                                              cf.direction === "Incoming" ? "text-positive" : "text-foreground"
+                                            )}>
+                                              {cf.direction === "Incoming" ? "+" : "−"}{formatCompactRupiah(cf.amount)}
+                                            </td>
+                                            <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">{formatDate(cf.dueDate)}</td>
+                                            <td className="px-3 py-2 text-center">
+                                              <StatusBadge status={cf.status} />
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground bg-muted/10">
+                                    Tidak ada transaksi cash flow spesifik yang dialokasikan langsung dari bank ini pada periode ini. Penempatan menggunakan saldo giro eksisting.
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
               {!filteredLines.length ? (
@@ -3644,6 +3800,9 @@ export default function DepositDesk() {
         if (isWorkspaceData(parsed)) {
           if (parsed.instructions.length < 10) {
             parsed.instructions = DEMO_WORKSPACE.instructions;
+          }
+          if (!parsed.cashflows[0]?.bankName || parsed.cashflows.length < 12) {
+            parsed.cashflows = DEMO_WORKSPACE.cashflows;
           }
           setWorkspace(parsed);
         }

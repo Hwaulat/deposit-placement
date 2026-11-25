@@ -12,6 +12,7 @@ export interface CashflowItem {
   amount: number;
   dueDate: string;
   status: CashflowStatus;
+  bankName?: string;
 }
 
 export interface Bank {
@@ -220,6 +221,7 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
     amount: 1_240_000_000,
     dueDate: "2026-11-26",
     status: "Validated",
+    bankName: "Bank Mandiri",
   },
   {
     id: "CF-24017",
@@ -231,6 +233,7 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
     amount: 1_960_000_000,
     dueDate: "2026-11-25",
     status: "Validated",
+    bankName: "Bank Central Asia",
   },
   {
     id: "CF-24016",
@@ -242,6 +245,7 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
     amount: 842_500_000,
     dueDate: "2026-11-27",
     status: "Submitted",
+    bankName: "Bank Central Asia",
   },
   {
     id: "CF-24015",
@@ -253,6 +257,7 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
     amount: 184_000_000,
     dueDate: "2026-11-30",
     status: "Validated",
+    bankName: "Bank Negara Indonesia",
   },
   {
     id: "CF-24014",
@@ -264,6 +269,7 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
     amount: 286_000_000,
     dueDate: "2026-11-30",
     status: "Need revision",
+    bankName: "Bank Danamon",
   },
   {
     id: "CF-24013",
@@ -275,6 +281,7 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
     amount: 1_420_000_000,
     dueDate: "2026-12-03",
     status: "Draft",
+    bankName: "Bank Mandiri",
   },
   {
     id: "CF-24012",
@@ -286,6 +293,7 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
     amount: 698_000_000,
     dueDate: "2026-12-04",
     status: "Validated",
+    bankName: "CIMB Niaga",
   },
   {
     id: "CF-24011",
@@ -297,6 +305,55 @@ export const DEMO_CASHFLOWS: CashflowItem[] = [
     amount: 412_000_000,
     dueDate: "2026-12-05",
     status: "Validated",
+    bankName: "Bank Negara Indonesia",
+  },
+  {
+    id: "CF-24010",
+    reference: "Corporate customer billing",
+    department: "Accounts Receivable",
+    category: "Customer collection",
+    direction: "Incoming",
+    source: "ERP feed",
+    amount: 720_000_000,
+    dueDate: "2026-11-26",
+    status: "Validated",
+    bankName: "CIMB Niaga",
+  },
+  {
+    id: "CF-24009",
+    reference: "Export trade proceeds",
+    department: "Treasury",
+    category: "Trade finance",
+    direction: "Incoming",
+    source: "ERP feed",
+    amount: 540_000_000,
+    dueDate: "2026-11-27",
+    status: "Validated",
+    bankName: "Bank Danamon",
+  },
+  {
+    id: "CF-24008",
+    reference: "Dividend & affiliate fee",
+    department: "Finance",
+    category: "Investment return",
+    direction: "Incoming",
+    source: "ERP feed",
+    amount: 450_000_000,
+    dueDate: "2026-11-25",
+    status: "Validated",
+    bankName: "Bank Central Asia",
+  },
+  {
+    id: "CF-24007",
+    reference: "IT enterprise software licensing",
+    department: "IT & Infrastructure",
+    category: "Operational expense",
+    direction: "Outgoing",
+    source: "Department form",
+    amount: 185_000_000,
+    dueDate: "2026-11-26",
+    status: "Validated",
+    bankName: "Bank Mandiri",
   },
 ];
 
