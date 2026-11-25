@@ -1149,7 +1149,7 @@ function CashflowView({
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Daily (Per Hari)
+              Daily
             </button>
             <button
               type="button"
@@ -1164,7 +1164,7 @@ function CashflowView({
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Weekly (Mingguan)
+              Weekly
             </button>
             <button
               type="button"
@@ -1179,7 +1179,7 @@ function CashflowView({
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Monthly (Bulanan)
+              Monthly
             </button>
             <button
               type="button"
@@ -1748,8 +1748,8 @@ function AllocationView({
                                 type="button"
                                 variant="iconView"
                                 onClick={() => toggleExpand(line.id)}
-                                title={isExpanded ? "Tutup rincian transaksi cash flow" : "Lihat rincian transaksi cash flow"}
-                                aria-label={isExpanded ? "Tutup rincian transaksi cash flow" : "Lihat rincian transaksi cash flow"}
+                                title={isExpanded ? "Collapse cash flow transaction details" : "View cash flow transaction details"}
+                                aria-label={isExpanded ? "Collapse cash flow transaction details" : "View cash flow transaction details"}
                                 className={cn(isExpanded && "bg-[#EFF4FB] border-[#1F5AA6] text-[#1F5AA6] dark:bg-[#1F5AA6]/20")}
                               >
                                 {isExpanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
@@ -1772,7 +1772,7 @@ function AllocationView({
                               onClick={() => toggleExpand(line.id)}
                               role="button"
                               tabIndex={0}
-                              title={isExpanded ? "Klik untuk menutup rincian" : "Klik untuk melihat rincian transaksi cash flow"}
+                              title={isExpanded ? "Click to collapse details" : "Click to view cash flow transaction details"}
                             >
                               <span className="rank-mark">{line.rank}</span>
                               <div>
@@ -1803,28 +1803,31 @@ function AllocationView({
                                   <div>
                                     <div className="flex items-center gap-2">
                                       <h4 className="text-xs font-bold text-foreground">
-                                        Rincian Transaksi Cash Flow — {line.bankName}
+                                        Cash Flow Transaction Details — {line.bankName}
                                       </h4>
                                       <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
-                                        {bankCashflows.length} Transaksi Terkait
+                                        {bankCashflows.length} Related Transactions
                                       </span>
                                     </div>
                                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                                      Daftar transaksi arus kas operasional (penerimaan & pengeluaran) yang mendasari likuiditas penempatan deposito di bank ini.
+                                      List of operational cash flow transactions (inflows & outflows) underpinning deposit liquidity for this bank.
                                     </p>
                                   </div>
                                   <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                                    <div className="rounded border border-emerald-200 bg-emerald-50/80 dark:bg-emerald-950/30 dark:border-emerald-800 px-2.5 py-1 text-emerald-700 dark:text-emerald-400">
-                                      <span className="text-[10px] uppercase font-sans font-semibold mr-1.5 opacity-80">Masuk:</span>
-                                      +{formatCompactRupiah(incomingTotal)}
+                                    <div className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 shadow-2xs dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                                      <span className="size-1.5 rounded-full bg-emerald-500" />
+                                      <span className="text-[10px] uppercase font-sans font-bold opacity-90">INCOMING:</span>
+                                      <span>+{formatCompactRupiah(incomingTotal)}</span>
                                     </div>
-                                    <div className="rounded border border-rose-200 bg-rose-50/80 dark:bg-rose-950/30 dark:border-rose-800 px-2.5 py-1 text-rose-700 dark:text-rose-400">
-                                      <span className="text-[10px] uppercase font-sans font-semibold mr-1.5 opacity-80">Keluar:</span>
-                                      -{formatCompactRupiah(outgoingTotal)}
+                                    <div className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1 font-semibold text-rose-700 shadow-2xs dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300">
+                                      <span className="size-1.5 rounded-full bg-rose-500" />
+                                      <span className="text-[10px] uppercase font-sans font-bold opacity-90">OUTGOING:</span>
+                                      <span>-{formatCompactRupiah(outgoingTotal)}</span>
                                     </div>
-                                    <div className="rounded border border-blue-200 bg-blue-50/80 dark:bg-blue-950/30 dark:border-blue-800 px-2.5 py-1 font-semibold text-[#1F5AA6] dark:text-blue-300">
-                                      <span className="text-[10px] uppercase font-sans font-semibold mr-1.5 opacity-80">Net:</span>
-                                      {netCash >= 0 ? "+" : ""}{formatCompactRupiah(netCash)}
+                                    <div className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 shadow-2xs dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
+                                      <span className="size-1.5 rounded-full bg-blue-500" />
+                                      <span className="text-[10px] uppercase font-sans font-bold opacity-90">NET:</span>
+                                      <span>{netCash >= 0 ? "+" : ""}{formatCompactRupiah(netCash)}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -1837,9 +1840,9 @@ function AllocationView({
                                           <th className="px-3 py-2 text-left">REF ID</th>
                                           <th className="px-3 py-2 text-left">REFERENCE & CATEGORY</th>
                                           <th className="px-3 py-2 text-left">DEPARTMENT</th>
-                                          <th className="px-3 py-2 text-center">ARAH</th>
-                                          <th className="px-3 py-2 text-right">JUMLAH (IDR)</th>
-                                          <th className="px-3 py-2 text-left">JATUH TEMPO</th>
+                                          <th className="px-3 py-2 text-center">DIRECTION</th>
+                                          <th className="px-3 py-2 text-right">AMOUNT (IDR)</th>
+                                          <th className="px-3 py-2 text-left">DUE DATE</th>
                                           <th className="px-3 py-2 text-center">STATUS</th>
                                         </tr>
                                       </thead>
@@ -1859,7 +1862,7 @@ function AllocationView({
                                                   ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
                                                   : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
                                               )}>
-                                                {cf.direction === "Incoming" ? "↓ Masuk" : "↑ Keluar"}
+                                                {cf.direction === "Incoming" ? "↓ Inflow" : "↑ Outflow"}
                                               </span>
                                             </td>
                                             <td className={cn(
@@ -1879,7 +1882,7 @@ function AllocationView({
                                   </div>
                                 ) : (
                                   <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground bg-muted/10">
-                                    Tidak ada transaksi cash flow spesifik yang dialokasikan langsung dari bank ini pada periode ini. Penempatan menggunakan saldo giro eksisting.
+                                    No direct cash flow transactions recorded for this bank during this period. Placement is funded from existing demand deposit balances.
                                   </div>
                                 )}
                               </div>
@@ -2243,14 +2246,14 @@ function InstructionsView({
   const downloadInstructionPdf = (item: BankInstruction) => {
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
-      toast.error("Pop-up diblokir oleh browser. Izinkan pop-up untuk mengunduh dokumen PDF.");
+      toast.error("Pop-up blocked by browser. Please allow pop-ups to download PDF documents.");
       return;
     }
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Surat Instruksi Penempatan Deposito - ${item.id}</title>
+          <title>Deposit Placement Instruction Letter - ${item.id}</title>
           <style>
             @page { size: A4; margin: 20mm; }
             body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.6; margin: 0; padding: 24px; }
@@ -2280,77 +2283,77 @@ function InstructionsView({
             <div>
               <div class="company">PT KORPORA MAJU BERSAMA</div>
               <div class="dept">Treasury & Cash Management Division</div>
-              <div class="address">Gedung Bursa Efek Indonesia, Tower 2, Lantai 18, Jakarta Selatan</div>
+              <div class="address">Indonesia Stock Exchange Building, Tower 2, 18th Floor, South Jakarta</div>
             </div>
             <div class="doc-meta">
               <div class="doc-id">${item.id}</div>
-              <div>Ref Voucher: <strong>${item.voucherNumber}</strong></div>
-              <div>Tanggal Terbit: ${formatDate(item.createdAt)}</div>
+              <div>Voucher Ref: <strong>${item.voucherNumber}</strong></div>
+              <div>Issue Date: ${formatDate(item.createdAt)}</div>
               <div style="margin-top: 4px;"><span style="background: #e2e8f0; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 10px;">${item.status}</span></div>
             </div>
           </div>
 
-          <p style="font-size: 12px; margin-bottom: 4px;">Kepada Yth.</p>
-          <p style="font-size: 13px; font-weight: bold; margin: 0 0 2px 0;">Pimpinan Operasional / Divisi Korporasi</p>
+          <p style="font-size: 12px; margin-bottom: 4px;">To:</p>
+          <p style="font-size: 13px; font-weight: bold; margin: 0 0 2px 0;">Head of Operations / Corporate Division</p>
           <p style="font-size: 13px; font-weight: 600; margin: 0 0 2px 0; color: #1F5AA6;">${item.bankName}</p>
-          <p style="font-size: 12px; color: #64748b; margin: 0;">Kantor Cabang Utama</p>
+          <p style="font-size: 12px; color: #64748b; margin: 0;">Main Branch Office</p>
 
           <div class="subject-box">
-            Perihal: Surat Instruksi Penempatan Deposito Berjangka (Time Deposit)
+            Subject: Term Deposit Placement Instruction Letter (Time Deposit)
           </div>
 
           <p style="font-size: 12px; color: #334155; line-height: 1.6;">
-            Dengan hormat, sehubungan dengan optimalisasi kas dan penempatan dana likuiditas perusahaan, bersama surat ini kami instruksikan untuk menempatkan Deposito Berjangka atas nama <strong>PT Korpora Maju Bersama</strong> dengan rincian data sebagai berikut:
+            Dear Sir/Madam, in connection with cash optimization and corporate liquidity placement, we hereby instruct the placement of a Time Deposit on behalf of <strong>PT Korpora Maju Bersama</strong> with the following details:
           </p>
 
           <table class="table-spec">
             <tr>
-              <td class="label">Bank Penerima</td>
+              <td class="label">Beneficiary Bank</td>
               <td class="value"><strong>${item.bankName}</strong></td>
             </tr>
             <tr>
-              <td class="label">Nominal Pokok Penempatan</td>
+              <td class="label">Principal Placement Amount</td>
               <td class="value" style="font-size: 14px; font-weight: bold; font-family: monospace; color: #0a386c;">${formatRupiah(item.amount)}</td>
             </tr>
             <tr>
-              <td class="label">Tanggal Efektif Penempatan</td>
+              <td class="label">Effective Placement Date</td>
               <td class="value">${formatDate(item.createdAt)}</td>
             </tr>
             <tr>
-              <td class="label">Tanggal Jatuh Tempo</td>
+              <td class="label">Maturity Date</td>
               <td class="value">${formatDate(item.maturityDate)}</td>
             </tr>
             <tr>
-              <td class="label">Jangka Waktu (Tenor)</td>
-              <td class="value">90 Hari Kerja (Business Days)</td>
+              <td class="label">Tenor</td>
+              <td class="value">90 Business Days</td>
             </tr>
             <tr>
-              <td class="label">Rekening Sumber Debet</td>
-              <td class="value" style="font-family: monospace;">102-00-982144-0 (Giro Operasional IDR)</td>
+              <td class="label">Source Debit Account</td>
+              <td class="value" style="font-family: monospace;">102-00-982144-0 (Operational Current Account IDR)</td>
             </tr>
             <tr>
-              <td class="label">Instruksi Jatuh Tempo</td>
-              <td class="value">Non-ARO (Pokok dan Bunga dikreditkan kembali ke Rekening Sumber)</td>
+              <td class="label">Maturity Instruction</td>
+              <td class="value">Non-ARO (Principal and Interest credited back to Source Account)</td>
             </tr>
             <tr>
-              <td class="label">Format Template Berkas</td>
+              <td class="label">Document Template Format</td>
               <td class="value" style="font-family: monospace; font-size: 11px;">${item.template}</td>
             </tr>
           </table>
 
           <p style="font-size: 11px; color: #64748b; line-height: 1.5;">
-            Mohon bilyet deposito atau konfirmasi penempatan elektronik diterbitkan dan dikirimkan kepada Departemen Treasury melalui email resmi perbendaharaan perusahaan. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.
+            Please issue and deliver the deposit certificate or electronic placement confirmation to the Corporate Treasury Department via official email. Thank you for your cooperation.
           </p>
 
           <div class="signatures">
             <div class="sign-col">
-              <div class="sign-title">Disiapkan Oleh,</div>
+              <div class="sign-title">Prepared By,</div>
               <div class="sign-space"></div>
               <div class="sign-name">Agus Setiawan</div>
               <div class="sign-title">Treasury Dept. Head</div>
             </div>
             <div class="sign-col">
-              <div class="sign-title">Disetujui Oleh,</div>
+              <div class="sign-title">Approved By,</div>
               <div class="sign-space"></div>
               <div class="sign-name">Bambang Hartono</div>
               <div class="sign-title">Finance Accounting Director</div>
@@ -2366,7 +2369,7 @@ function InstructionsView({
       </html>
     `);
     printWindow.document.close();
-    toast.success(`Membuka dokumen PDF ${item.id} untuk dicetak / diunduh.`);
+    toast.success(`Opening PDF document ${item.id} for printing / download.`);
   };
 
   return (
@@ -2486,8 +2489,8 @@ function InstructionsView({
                         type="button"
                         variant="iconDownload"
                         onClick={() => downloadInstructionPdf(item)}
-                        title="Download Dokumen PDF"
-                        aria-label="Download Dokumen PDF"
+                        title="Download PDF Document"
+                        aria-label="Download PDF Document"
                       >
                         <Download className="size-4 text-rose-500" />
                       </Button>
@@ -3129,7 +3132,7 @@ function AllocationEditDialog({
               </div>
               <div className="mt-2">
                 <label className="block">
-                  <span className="mb-1 block text-[11px] text-muted-foreground">Maturity Date (Tanggal Jatuh Tempo)</span>
+                  <span className="mb-1 block text-[11px] text-muted-foreground">Maturity Date</span>
                   <Input
                     type="date"
                     value={maturityDate}
@@ -3209,32 +3212,32 @@ const VOUCHER_TEMPLATE_PRESETS = [
   {
     id: "BCA — Fixed Deposit PDF Layout",
     label: "BCA — Fixed Deposit PDF Layout",
-    desc: "Format standar BCA untuk instruksi penempatan deposito berjangka & advis resmi.",
+    desc: "Standard BCA format for corporate time deposit placement instructions and formal advisory.",
   },
   {
     id: "Mandiri — Universal Corporate Voucher",
     label: "Mandiri — Universal Corporate Voucher",
-    desc: "Layout voucher formal Mandiri untuk korporasi dengan validasi maker-checker-signer.",
+    desc: "Mandiri formal voucher layout for corporations with maker-checker-signer validation.",
   },
   {
     id: "BNI — Time Deposit Placement Letter",
     label: "BNI — Time Deposit Placement Letter",
-    desc: "Surat instruksi resmi BNI dengan lampiran rincian debit giro dan nominal pokok.",
+    desc: "Official BNI instruction letter with debit account details and principal amount attachments.",
   },
   {
     id: "CIMB Niaga — Placement Template",
     label: "CIMB Niaga — Placement Template",
-    desc: "Template penempatan deposito berjangka CIMB Niaga dengan klausul perpanjangan ARO.",
+    desc: "CIMB Niaga time deposit placement template with ARO rollover clauses.",
   },
   {
     id: "Danamon — Standard Term Deposit Letter",
     label: "Danamon — Standard Term Deposit Letter",
-    desc: "Layout formal Bank Danamon dengan tabel instruksi jatuh tempo & nomor bilyet.",
+    desc: "Formal Bank Danamon layout with maturity instructions table and certificate number.",
   },
   {
     id: "Universal — Standard Corporate Placement Voucher",
     label: "Universal — Standard Corporate Placement Voucher",
-    desc: "Template universal korporat yang kompatibel dengan seluruh bank rekanan.",
+    desc: "Universal corporate template compatible with all partner banks.",
   },
 ];
 
@@ -3278,10 +3281,10 @@ function BankTemplateDialog({
         <DialogHeader>
           <div className="flex items-center gap-2">
             <FileText className="size-5 text-blue-600" />
-            <DialogTitle>Pengaturan Template Voucher & PDF Bank</DialogTitle>
+            <DialogTitle>Bank Voucher & PDF Template Settings</DialogTitle>
           </div>
           <DialogDescription>
-            Pilih dan konfigurasikan layout dokumen PDF surat instruksi dan voucher penempatan deposito untuk <strong>{bank.name}</strong>.
+            Select and configure the PDF document layout for placement instructions and vouchers for <strong>{bank.name}</strong>.
           </DialogDescription>
         </DialogHeader>
 
@@ -3293,14 +3296,14 @@ function BankTemplateDialog({
               <span className="ml-2 text-muted-foreground">Rank #{bank.rank} · Rate {bank.depositRate.toFixed(2)}% p.a.</span>
             </div>
             <span className="rounded bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-primary">
-              Maks Alokasi: {bank.maxAllocationPercent}%
+              Max Allocation: {bank.maxAllocationPercent}%
             </span>
           </div>
 
           {/* Template Preset Selection */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">
-              Pilihan Template Layout Voucher / Surat Instruksi
+              Voucher & Bank Instruction Template Options
             </label>
             <select
               value={selectedTemplate}
@@ -3314,46 +3317,46 @@ function BankTemplateDialog({
               ))}
             </select>
             <p className="text-[11px] text-muted-foreground">
-              {VOUCHER_TEMPLATE_PRESETS.find((p) => p.id === selectedTemplate)?.desc ?? "Template kustom perbankan untuk keluaran berkas PDF."}
+              {VOUCHER_TEMPLATE_PRESETS.find((p) => p.id === selectedTemplate)?.desc ?? "Custom banking template for PDF file output."}
             </p>
           </div>
 
           {/* Options Grid */}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">Format Kop Surat (Letterhead)</label>
+              <label className="mb-1 block text-xs font-medium text-foreground">Letterhead Format</label>
               <select
                 value={letterheadStyle}
                 onChange={(e) => setLetterheadStyle(e.target.value)}
                 className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
               >
-                <option value="Official Treasury Letterhead">Resmi (PT Korpora Maju Bersama — Treasury)</option>
-                <option value="Compact Corporate Header">Kop Ringkas Perusahaan (Tanpa Alamat Lengkap)</option>
-                <option value="Plain Bank Letter">Format Polos (Tanpa Header PT)</option>
+                <option value="Official Treasury Letterhead">Official (PT Korpora Maju Bersama — Treasury)</option>
+                <option value="Compact Corporate Header">Compact Corporate Header (Without Full Address)</option>
+                <option value="Plain Bank Letter">Plain Format (No Corporate Header)</option>
               </select>
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">Otorisasi Tanda Tangan</label>
+              <label className="mb-1 block text-xs font-medium text-foreground">Signatory Authorization</label>
               <select
                 value={signatoryLevel}
                 onChange={(e) => setSignatoryLevel(e.target.value)}
                 className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
               >
-                <option value="Dual Signatory (Treasury Head & Finance Director)">Dual Signatory (Dept Head & Direktur)</option>
+                <option value="Dual Signatory (Treasury Head & Finance Director)">Dual Signatory (Dept Head & Director)</option>
                 <option value="Single Signatory (Treasury Manager)">Single Signatory (Treasury Manager)</option>
-                <option value="Triple Signatory (Treasury, Div Head & Director)">Triple Signatory (Lengkap 3 Tingkat)</option>
+                <option value="Triple Signatory (Treasury, Div Head & Director)">Triple Signatory (Complete 3 Levels)</option>
               </select>
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-foreground">Ukuran / Orientasi Kertas</label>
+              <label className="mb-1 block text-xs font-medium text-foreground">Paper Size / Orientation</label>
               <select
                 value={paperFormat}
                 onChange={(e) => setPaperFormat(e.target.value)}
                 className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary"
               >
-                <option value="A4 Portrait">A4 — Portrait (Standar Perbankan)</option>
+                <option value="A4 Portrait">A4 — Portrait (Banking Standard)</option>
                 <option value="A4 Landscape">A4 — Landscape</option>
               </select>
             </div>
@@ -3366,19 +3369,19 @@ function BankTemplateDialog({
                   onChange={(e) => setIncludeQrCode(e.target.checked)}
                   className="rounded border-border text-primary focus:ring-primary"
                 />
-                <span>Sertakan QR Code verifikasi otentikasi</span>
+                <span>Include QR Code for authentication verification</span>
               </label>
             </div>
           </div>
 
           {/* Custom Instruction Notes */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-foreground">Catatan / Klausul Khusus Dokumen Bank (Opsional)</label>
+            <label className="mb-1 block text-xs font-medium text-foreground">Special Banking Clauses / Notes (Optional)</label>
             <textarea
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Contoh: Perpanjangan otomatis pokok & bunga (ARO + Interest), konfirmasi via dealing room..."
+              placeholder="Example: Automatic rollover of principal & interest (ARO + Interest), confirmation via dealing room..."
               className="w-full rounded-lg border border-border bg-background p-2.5 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
             />
           </div>
@@ -3386,7 +3389,7 @@ function BankTemplateDialog({
           {/* Live Document Preview Box */}
           <div className="rounded-lg border border-border bg-muted/20 p-3.5">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Pratinjau Layout Dokumen PDF</span>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">PDF Document Layout Preview</span>
               <span className="font-mono text-[10px] text-muted-foreground">{paperFormat}</span>
             </div>
             <div className="rounded border border-dashed border-border bg-card p-3 shadow-2xs">
@@ -3395,14 +3398,14 @@ function BankTemplateDialog({
                 <span className="font-mono text-[9px] text-muted-foreground">VCH-PDF-{bank.id.toUpperCase()}</span>
               </div>
               <div className="py-2 text-[11px] text-muted-foreground">
-                <div className="font-medium text-foreground">Kepada: {bank.name} — Divisi Corporate Treasury</div>
+                <div className="font-medium text-foreground">To: {bank.name} — Corporate Treasury Division</div>
                 <div className="mt-1 flex items-center justify-between text-[10px]">
                   <span>Template: <strong className="text-foreground">{selectedTemplate}</strong></span>
-                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Siap Cetak</span>
+                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">Ready to Print</span>
                 </div>
               </div>
               <div className="border-t border-border pt-2 text-[10px] text-muted-foreground">
-                <span>Otorisasi: {signatoryLevel}</span>
+                <span>Authorization: {signatoryLevel}</span>
                 {includeQrCode && <span className="ml-2 font-mono text-[9px] text-emerald-600 dark:text-emerald-400">• QR Verified</span>}
               </div>
             </div>
@@ -3410,11 +3413,11 @@ function BankTemplateDialog({
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              Batal
+              Cancel
             </Button>
             <Button type="submit" className="btn-blue">
               <Check className="size-4" aria-hidden="true" />
-              Simpan Template Bank
+              Save Bank Template
             </Button>
           </DialogFooter>
         </form>
@@ -3438,11 +3441,11 @@ function InstructionLetterDialog({
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>Surat Instruksi Penempatan Deposito</DialogTitle>
+            <DialogTitle>Deposit Placement Instruction Letter</DialogTitle>
             <StatusBadge status={instruction.status} />
           </div>
           <DialogDescription>
-            Format dokumen fisik instruksi perbankan untuk cetak, otorisasi tanda tangan, dan pengiriman manual.
+            Official physical banking instruction document for printing, signature authorization, and bank dispatch.
           </DialogDescription>
         </DialogHeader>
 
@@ -3452,7 +3455,7 @@ function InstructionLetterDialog({
             <div>
               <p className="text-sm font-bold tracking-wider uppercase text-foreground">PT KORPORA MAJU BERSAMA</p>
               <p className="text-[11px] font-medium text-muted-foreground">Treasury & Cash Management Division</p>
-              <p className="text-[10px] text-muted-foreground">Gedung Bursa Efek Indonesia, Tower 2, Jakarta</p>
+              <p className="text-[10px] text-muted-foreground">Indonesia Stock Exchange Building, Tower 2, Jakarta</p>
             </div>
             <div className="text-right">
               <span className="font-mono text-xs font-semibold text-foreground">{instruction.id}</span>
@@ -3463,21 +3466,21 @@ function InstructionLetterDialog({
 
           {/* Recipient */}
           <div className="space-y-0.5">
-            <p className="font-medium text-muted-foreground">Kepada Yth.</p>
-            <p className="font-semibold text-foreground">Pimpinan Operasional / Divisi Korporasi</p>
+            <p className="font-medium text-muted-foreground">To:</p>
+            <p className="font-semibold text-foreground">Head of Operations / Corporate Division</p>
             <p className="font-medium text-foreground">{instruction.bankName}</p>
-            <p className="text-[11px] text-muted-foreground">Kantor Cabang Utama</p>
+            <p className="text-[11px] text-muted-foreground">Main Branch Office</p>
           </div>
 
           {/* Subject */}
           <div className="rounded border border-border bg-muted/40 p-2.5">
             <p className="font-semibold text-[11px] text-foreground">
-              Perihal: Instruksi Pembukaan & Penempatan Deposito Berjangka (Time Deposit)
+              Subject: Opening & Term Deposit Placement Instructions (Time Deposit)
             </p>
           </div>
 
           <p className="leading-relaxed text-muted-foreground">
-            Dengan hormat, sehubungan dengan optimalisasi kas dan penempatan dana likuiditas perusahaan, bersama surat ini kami instruksikan untuk menempatkan Deposito Berjangka atas nama <strong>PT Korpora Maju Bersama</strong> dengan rincian data sebagai berikut:
+            Dear Sir/Madam, in connection with cash optimization and corporate liquidity placement, we hereby instruct the placement of a Time Deposit on behalf of <strong>PT Korpora Maju Bersama</strong> with the following details:
           </p>
 
           {/* Detail Table */}
@@ -3485,35 +3488,35 @@ function InstructionLetterDialog({
             <table className="w-full text-xs">
               <tbody className="divide-y divide-border">
                 <tr className="bg-muted/20">
-                  <td className="w-1/3 px-3 py-2 font-medium text-muted-foreground">Bank Penerima</td>
+                  <td className="w-1/3 px-3 py-2 font-medium text-muted-foreground">Beneficiary Bank</td>
                   <td className="px-3 py-2 font-semibold text-foreground">{instruction.bankName}</td>
                 </tr>
                 <tr>
-                  <td className="px-3 py-2 font-medium text-muted-foreground">Nominal Pokok Penempatan</td>
+                  <td className="px-3 py-2 font-medium text-muted-foreground">Principal Placement Amount</td>
                   <td className="px-3 py-2 font-mono text-sm font-bold text-foreground">{formatRupiah(instruction.amount)}</td>
                 </tr>
                 <tr className="bg-muted/20">
-                  <td className="px-3 py-2 font-medium text-muted-foreground">Tanggal Efektif Penempatan</td>
+                  <td className="px-3 py-2 font-medium text-muted-foreground">Effective Placement Date</td>
                   <td className="px-3 py-2 font-medium text-foreground">{formatDate(instruction.createdAt)}</td>
                 </tr>
                 <tr>
-                  <td className="px-3 py-2 font-medium text-muted-foreground">Tanggal Jatuh Tempo</td>
+                  <td className="px-3 py-2 font-medium text-muted-foreground">Maturity Date</td>
                   <td className="px-3 py-2 font-medium text-foreground">{formatDate(instruction.maturityDate)}</td>
                 </tr>
                 <tr className="bg-muted/20">
-                  <td className="px-3 py-2 font-medium text-muted-foreground">Jangka Waktu (Tenor)</td>
-                  <td className="px-3 py-2 font-medium text-foreground">90 Hari Kerja / Business Days</td>
+                  <td className="px-3 py-2 font-medium text-muted-foreground">Tenor</td>
+                  <td className="px-3 py-2 font-medium text-foreground">90 Business Days</td>
                 </tr>
                 <tr>
-                  <td className="px-3 py-2 font-medium text-muted-foreground">Rekening Sumber Debet</td>
-                  <td className="px-3 py-2 font-mono text-foreground">102-00-982144-0 (Giro Operasional IDR)</td>
+                  <td className="px-3 py-2 font-medium text-muted-foreground">Source Debit Account</td>
+                  <td className="px-3 py-2 font-mono text-foreground">102-00-982144-0 (Operational Current Account IDR)</td>
                 </tr>
                 <tr className="bg-muted/20">
-                  <td className="px-3 py-2 font-medium text-muted-foreground">Instruksi Jatuh Tempo</td>
-                  <td className="px-3 py-2 font-medium text-foreground">Non-ARO (Pokok dan Bunga dikreditkan kembali ke Rekening Sumber)</td>
+                  <td className="px-3 py-2 font-medium text-muted-foreground">Maturity Instruction</td>
+                  <td className="px-3 py-2 font-medium text-foreground">Non-ARO (Principal and Interest credited back to Source Account)</td>
                 </tr>
                 <tr>
-                  <td className="px-3 py-2 font-medium text-muted-foreground">Format Template</td>
+                  <td className="px-3 py-2 font-medium text-muted-foreground">Template Format</td>
                   <td className="px-3 py-2 font-mono text-[11px] text-muted-foreground">{instruction.template}</td>
                 </tr>
               </tbody>
@@ -3521,20 +3524,20 @@ function InstructionLetterDialog({
           </div>
 
           <p className="text-[11px] leading-relaxed text-muted-foreground">
-            Mohon bilyet deposito atau konfirmasi penempatan elektronik dikirimkan kepada Departemen Treasury melalui email resmi perbendaharaan perusahaan. Atas perhatian dan kerjasamanya kami ucapkan terima kasih.
+            Please issue and deliver the deposit certificate or electronic placement confirmation to the Corporate Treasury Department via official email. Thank you for your cooperation.
           </p>
 
           {/* Signatures */}
           <div className="grid grid-cols-2 gap-8 border-t border-border pt-4 text-center">
             <div className="space-y-12">
-              <p className="text-[10px] font-semibold uppercase text-muted-foreground">Disiapkan Oleh,</p>
+              <p className="text-[10px] font-semibold uppercase text-muted-foreground">Prepared By,</p>
               <div>
                 <p className="font-semibold underline text-foreground">Agus Setiawan</p>
                 <p className="text-[10px] text-muted-foreground">Treasury Dept. Head</p>
               </div>
             </div>
             <div className="space-y-12">
-              <p className="text-[10px] font-semibold uppercase text-muted-foreground">Disetujui Oleh,</p>
+              <p className="text-[10px] font-semibold uppercase text-muted-foreground">Approved By,</p>
               <div>
                 <p className="font-semibold underline text-foreground">Bambang Hartono</p>
                 <p className="text-[10px] text-muted-foreground">Finance Accounting Director</p>
@@ -3546,8 +3549,8 @@ function InstructionLetterDialog({
         <DialogFooter className="flex flex-wrap items-center justify-between gap-2 sm:justify-between">
           <span className="text-[11px] text-muted-foreground">Voucher Ref: {instruction.voucherNumber}</span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Tutup</Button>
-            <Button size="sm" onClick={() => window.print()} className="btn-blue"><Download className="mr-1.5 size-3.5" />Cetak Dokumen (PDF)</Button>
+            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Close</Button>
+            <Button size="sm" onClick={() => window.print()} className="btn-blue"><Download className="mr-1.5 size-3.5" />Print Document (PDF)</Button>
           </div>
         </DialogFooter>
       </DialogContent>
@@ -3573,7 +3576,7 @@ function UploadExcelDialog({
 
   const processImport = () => {
     if (!selectedFile) {
-      toast.error("Pilih file Excel atau CSV terlebih dahulu.");
+      toast.error("Please select an Excel or CSV file first.");
       return;
     }
     const reader = new FileReader();
@@ -3653,7 +3656,7 @@ function UploadExcelDialog({
       setSelectedFile(null);
     };
     reader.onerror = () => {
-      toast.error("Gagal membaca file.");
+      toast.error("Failed to read file.");
     };
     reader.readAsText(selectedFile);
   };
@@ -3664,7 +3667,7 @@ function UploadExcelDialog({
         <DialogHeader>
           <DialogTitle>Upload Cash Flow Excel</DialogTitle>
           <DialogDescription>
-            Import data pengeluaran dan pemasukan kas melalui file Excel (.xlsx, .xls) atau CSV.
+            Import cash inflow and outflow transactions via Excel (.xlsx, .xls) or CSV file.
           </DialogDescription>
         </DialogHeader>
 
@@ -3704,19 +3707,19 @@ function UploadExcelDialog({
               <div>
                 <p className="text-xs font-semibold text-foreground">{selectedFile.name}</p>
                 <p className="mt-0.5 text-[10px] text-muted-foreground">
-                  {(selectedFile.size / 1024).toFixed(1)} KB · Siap diimpor
+                  {(selectedFile.size / 1024).toFixed(1)} KB · Ready to import
                 </p>
               </div>
             ) : (
               <div>
-                <p className="text-xs font-medium text-foreground">Klik untuk memilih file atau drag & drop</p>
-                <p className="mt-1 text-[11px] text-muted-foreground">Mendukung format .xlsx, .xls, dan .csv</p>
+                <p className="text-xs font-medium text-foreground">Click to browse file or drag & drop</p>
+                <p className="mt-1 text-[11px] text-muted-foreground">Supports .xlsx, .xls, and .csv formats</p>
               </div>
             )}
           </div>
 
           <div className="rounded-lg border border-border bg-muted/30 p-3 text-[11px] text-muted-foreground">
-            <p className="font-semibold text-foreground">Format Kolom Template Excel:</p>
+            <p className="font-semibold text-foreground">Excel Template Column Format:</p>
             <p className="mt-1 font-mono text-[10px]">
               Reference, Department, Category, Direction (Incoming/Outgoing), Amount, DueDate (YYYY-MM-DD)
             </p>
@@ -3758,16 +3761,16 @@ function UploadExcelDialog({
             }}
             className="text-xs text-muted-foreground"
           >
-            Gunakan Contoh Template
+            Use Sample Template
           </Button>
 
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-              Batal
+              Cancel
             </Button>
             <Button size="sm" onClick={processImport} disabled={!selectedFile} className="btn-blue">
               <Upload className="mr-1.5 size-3.5" />
-              Impor Data
+              Import Data
             </Button>
           </div>
         </DialogFooter>
@@ -4017,7 +4020,7 @@ export default function DepositDesk() {
       )
     );
     setTemplateBank(null);
-    toast.success(`Template PDF voucher untuk ${target.name} berhasil diperbarui.`);
+    toast.success(`PDF voucher template for ${target.name} successfully updated.`);
   };
 
   const saveParameters = (parameters: DepositParameters) => {
@@ -4078,7 +4081,7 @@ export default function DepositDesk() {
         "System (demo)"
       );
     });
-    toast.success("Voucher ERP dan Surat Instruksi Bank berhasil dibuat!");
+    toast.success("ERP vouchers and Bank Instructions successfully generated!");
   };
 
   const createInstructions = () => {

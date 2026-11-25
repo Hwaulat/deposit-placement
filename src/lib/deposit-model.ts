@@ -366,35 +366,35 @@ export interface HolidayEntry {
 }
 
 export const INDONESIAN_NATIONAL_HOLIDAYS_2026: HolidayEntry[] = [
-  { date: "2026-01-01", name: "Tahun Baru 2026 Masehi", source: "National Holiday" },
-  { date: "2026-01-16", name: "Isra Mi'raj Nabi Muhammad SAW", source: "National Holiday" },
-  { date: "2026-02-17", name: "Tahun Baru Imlek 2577 Kongzili", source: "National Holiday" },
-  { date: "2026-03-19", name: "Hari Suci Nyepi Saka 1948", source: "National Holiday" },
-  { date: "2026-03-20", name: "Hari Raya Idul Fitri 1447 H (Hari 1)", source: "National Holiday" },
-  { date: "2026-03-21", name: "Hari Raya Idul Fitri 1447 H (Hari 2)", source: "National Holiday" },
-  { date: "2026-04-03", name: "Wafat Yesus Kristus", source: "National Holiday" },
-  { date: "2026-05-01", name: "Hari Buruh Internasional", source: "National Holiday" },
-  { date: "2026-05-14", name: "Kenaikan Yesus Kristus", source: "National Holiday" },
-  { date: "2026-05-27", name: "Hari Raya Idul Adha 1447 H", source: "National Holiday" },
-  { date: "2026-05-31", name: "Hari Raya Waisak 2570 BE", source: "National Holiday" },
-  { date: "2026-06-01", name: "Hari Lahir Pancasila", source: "National Holiday" },
-  { date: "2026-06-16", name: "Tahun Baru Islam 1448 H", source: "National Holiday" },
-  { date: "2026-08-17", name: "Hari Kemerdekaan RI Ke-81", source: "National Holiday" },
-  { date: "2026-08-25", name: "Maulid Nabi Muhammad SAW", source: "National Holiday" },
-  { date: "2026-12-25", name: "Hari Raya Natal", source: "National Holiday" },
+  { date: "2026-01-01", name: "New Year's Day 2026", source: "National Holiday" },
+  { date: "2026-01-16", name: "Isra and Mi'raj of the Prophet Muhammad", source: "National Holiday" },
+  { date: "2026-02-17", name: "Chinese New Year 2577 Kongzili", source: "National Holiday" },
+  { date: "2026-03-19", name: "Balinese Day of Silence (Nyepi Saka 1948)", source: "National Holiday" },
+  { date: "2026-03-20", name: "Eid al-Fitr 1447 H (Day 1)", source: "National Holiday" },
+  { date: "2026-03-21", name: "Eid al-Fitr 1447 H (Day 2)", source: "National Holiday" },
+  { date: "2026-04-03", name: "Good Friday", source: "National Holiday" },
+  { date: "2026-05-01", name: "International Labor Day", source: "National Holiday" },
+  { date: "2026-05-14", name: "Ascension Day of Jesus Christ", source: "National Holiday" },
+  { date: "2026-05-27", name: "Eid al-Adha 1447 H", source: "National Holiday" },
+  { date: "2026-05-31", name: "Vesak Day 2570 BE", source: "National Holiday" },
+  { date: "2026-06-01", name: "Pancasila Day", source: "National Holiday" },
+  { date: "2026-06-16", name: "Islamic New Year 1448 H", source: "National Holiday" },
+  { date: "2026-08-17", name: "Indonesian Independence Day (81st)", source: "National Holiday" },
+  { date: "2026-08-25", name: "Prophet Muhammad's Birthday (Mawlid)", source: "National Holiday" },
+  { date: "2026-12-25", name: "Christmas Day", source: "National Holiday" },
 ];
 
 export const BI_SETTLEMENT_CLOSURES_2026: HolidayEntry[] = [
   ...INDONESIAN_NATIONAL_HOLIDAYS_2026.map((h) => ({ ...h, source: "Bank Indonesia" as const })),
-  { date: "2026-12-31", name: "Tutup Buku Tahunan Bank Indonesia (Year-end BI Clearing Close)", source: "Bank Indonesia" },
+  { date: "2026-12-31", name: "Bank Indonesia Annual Year-End Closing (Year-end BI Clearing Close)", source: "Bank Indonesia" },
 ];
 
 export const IDBM_CALENDAR_INFO = {
   name: "Indonesia Interbank Money Market (PUAB / IDBM)",
   tradingHours: "08:30 - 15:00 WIB",
   settlementConvention: "T+0 / Same Day Settlement",
-  nonTradingDays: "Sabtu, Minggu & Hari Libur Operasional BI / Nasional",
-  description: "Pasar Uang Antar Bank untuk penempatan instrumen pasar uang dan time deposit rupiah.",
+  nonTradingDays: "Saturday, Sunday & Bank Indonesia / National Public Holidays",
+  description: "Indonesia Interbank Money Market for money market instruments and Rupiah time deposit placement.",
 };
 
 export interface BankDueDatePattern {
