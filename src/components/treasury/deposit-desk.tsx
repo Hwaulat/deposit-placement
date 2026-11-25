@@ -1810,24 +1810,21 @@ function AllocationView({
                                       </span>
                                     </div>
                                     <p className="text-[11px] text-muted-foreground mt-0.5">
-                                      List of operational cash flow transactions (inflows & outflows) underpinning deposit liquidity for this bank.
+                                      List of operational cash flow transactions (incoming & outgoing) underpinning deposit liquidity for this bank.
                                     </p>
                                   </div>
                                   <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                                    <div className="inline-flex items-center gap-1.5 rounded-md border border-emerald-300 bg-emerald-50 px-2.5 py-1 font-semibold text-emerald-700 shadow-2xs dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
-                                      <span className="size-1.5 rounded-full bg-emerald-500" />
-                                      <span className="text-[10px] uppercase font-sans font-bold opacity-90">INCOMING:</span>
-                                      <span>+{formatCompactRupiah(incomingTotal)}</span>
+                                    <div className="rounded-md border border-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 dark:border-emerald-700 px-2.5 py-1 font-semibold text-emerald-700 dark:text-emerald-300 shadow-2xs">
+                                      <span className="text-[10px] uppercase font-sans font-bold mr-1.5 opacity-90">INCOMING:</span>
+                                      +{formatCompactRupiah(incomingTotal)}
                                     </div>
-                                    <div className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1 font-semibold text-rose-700 shadow-2xs dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300">
-                                      <span className="size-1.5 rounded-full bg-rose-500" />
-                                      <span className="text-[10px] uppercase font-sans font-bold opacity-90">OUTGOING:</span>
-                                      <span>-{formatCompactRupiah(outgoingTotal)}</span>
+                                    <div className="rounded-md border border-rose-300 bg-rose-50 dark:bg-rose-950/50 dark:border-rose-700 px-2.5 py-1 font-semibold text-rose-700 dark:text-rose-300 shadow-2xs">
+                                      <span className="text-[10px] uppercase font-sans font-bold mr-1.5 opacity-90">OUTGOING:</span>
+                                      -{formatCompactRupiah(outgoingTotal)}
                                     </div>
-                                    <div className="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 shadow-2xs dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300">
-                                      <span className="size-1.5 rounded-full bg-blue-500" />
-                                      <span className="text-[10px] uppercase font-sans font-bold opacity-90">NET:</span>
-                                      <span>{netCash >= 0 ? "+" : ""}{formatCompactRupiah(netCash)}</span>
+                                    <div className="rounded-md border border-blue-300 bg-blue-50 dark:bg-blue-950/50 dark:border-blue-700 px-2.5 py-1 font-semibold text-[#1F5AA6] dark:text-blue-300 shadow-2xs">
+                                      <span className="text-[10px] uppercase font-sans font-bold mr-1.5 opacity-90">NET:</span>
+                                      {netCash >= 0 ? "+" : ""}{formatCompactRupiah(netCash)}
                                     </div>
                                   </div>
                                 </div>
@@ -1862,7 +1859,7 @@ function AllocationView({
                                                   ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
                                                   : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400"
                                               )}>
-                                                {cf.direction === "Incoming" ? "↓ Inflow" : "↑ Outflow"}
+                                                {cf.direction === "Incoming" ? "↓ Incoming" : "↑ Outgoing"}
                                               </span>
                                             </td>
                                             <td className={cn(
@@ -2562,7 +2559,7 @@ function ReportsView({
   const reports = [
     { name: "Balance & Deposit Allocation", period: "November 2026", generated: "24 Nov 2026", status: "Ready", kind: "allocation" as const, icon: FileCheck2, detail: "Current proposal, rate and equity-limit comparison" },
     { name: "Deposit Position as of", period: "24 November 2026", generated: "24 Nov 2026", status: "Ready", kind: "position" as const, icon: Landmark, detail: "Bank-by-bank balance, share and maturity date" },
-    { name: "Cash Flow Forecast", period: "Week 48 · 2026", generated: "24 Nov 2026", status: "Ready", kind: "cashflow" as const, icon: Activity, detail: "Actual and forecast inflows and outflows" },
+    { name: "Cash Flow Forecast", period: "Week 48 · 2026", generated: "24 Nov 2026", status: "Ready", kind: "cashflow" as const, icon: Activity, detail: "Actual and forecast incoming and outgoing" },
   ];
   return (
     <div className="space-y-5">
@@ -4081,7 +4078,7 @@ export default function DepositDesk() {
         "System (demo)"
       );
     });
-    toast.success("ERP vouchers and Bank Instructions successfully generated!");
+    toast.success("Voucher ERP dan Surat Instruksi Bank berhasil dibuat!");
   };
 
   const createInstructions = () => {
