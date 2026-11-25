@@ -3664,7 +3664,7 @@ function UploadExcelDialog({
         <DialogHeader>
           <DialogTitle>Upload Cash Flow Excel</DialogTitle>
           <DialogDescription>
-            Import cash inflow and outflow transactions via Excel (.xlsx, .xls) or CSV file.
+            Import cash incoming and outgoing transactions via Excel (.xlsx, .xls) or CSV file.
           </DialogDescription>
         </DialogHeader>
 
